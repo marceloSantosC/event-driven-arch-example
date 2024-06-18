@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: event-driven-arch-example
+  cloud:
+    aws:
+      credentials:
+        access-key: localstack
+        secret-key: localstack
+      region:
+        static: sa-east-1
+      sqs:
+        endpoint: http://localhost:4566
+
+
+
+event-queues:
+  order:
+    received-events: order-received-events
+    create-events: order-create-events
+    failed-events: order-failed-events
+    notification-events: order-notification-events
+  product:
+    create-events: product-create-events
+    update-events: product-update-events
+    notification-events: product-notification-events
+  app:
+    notification-events: app-notification-events
