@@ -1,6 +1,6 @@
-package com.example.eventdrivenarchexample.client;
+package com.example.eventdrivenarchexample.app.client;
 
-import com.example.eventdrivenarchexample.exception.MessageBrokerException;
+import com.example.eventdrivenarchexample.app.exception.MessageBrokerException;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

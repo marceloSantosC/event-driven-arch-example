@@ -11,8 +11,6 @@ spring:
       sqs:
         endpoint: http://localhost:4566
 
-
-
 event-queues:
   order:
     received-events: order-received-events
@@ -23,5 +21,12 @@ event-queues:
     create-events: product-create-events
     update-events: product-update-events
     notification-events: product-notification-events
-  app:
-    notification-events: app-notification-events
+
+push-notifications:
+  product:
+    on-creation-fail:
+      title: Failed to create product with name {0}.
+      message: Product with name {0} created with id {1}.
+    on-creation-success:
+      title: Product with name {0} created.
+      message: Product with name {0} couldn't be created because {1}.
