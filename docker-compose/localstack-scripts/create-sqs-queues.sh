@@ -19,9 +19,3 @@ aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-notificat
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-create-events --profile=localstack
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-update-events --profile=localstack
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-notification-events --profile=localstack
-
-# APP
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name app-notification-events --profile=localstack
-
-echo ########################LISTING QUEUES########################
-aws sqs list-queues --profile=localstack

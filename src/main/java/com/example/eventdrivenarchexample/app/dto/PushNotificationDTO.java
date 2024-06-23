@@ -1,14 +1,14 @@
 package com.example.eventdrivenarchexample.app.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.text.MessageFormat;
 
+@Setter
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class PushNotificationDTO {
 
     private String title;

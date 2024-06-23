@@ -24,9 +24,9 @@ event-queues:
 
 push-notifications:
   product:
-    on-creation-fail:
+    creation-failed:
       title: Failed to create product with name {0}.
       message: Product with name {0} created with id {1}.
-    on-creation-success:
+    creation-success:
       title: Product with name {0} created.
       message: Product with name {0} couldn't be created because {1}.

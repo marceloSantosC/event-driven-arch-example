@@ -41,14 +41,14 @@ public class ProductService {
     }
 
     private void sendProductCreationFailEvents(NewProductEventPayload eventPayload) {
-        var notification = notificationProperties.getCreationFailPushNotification();
+        var notification = notificationProperties.getCreationFailed();
         notification.formatMessage(eventPayload.name(), "the product already exists");
         notification.formatTittle(eventPayload.name());
         sqsClient.sendToSQS(productEventQueues.getProductNotificationEventsQueue(), notification);
     }
 
     private void sendProductCreationSuccessEvents(ProductEntity product) {
-        var notification = notificationProperties.getCreationSuccessPushNotification();
+        var notification = notificationProperties.getCreationSuccess();
         notification.formatTittle(product.getName());
         notification.formatMessage(product.getName(), product.getId().toString());
         sqsClient.sendToSQS(productEventQueues.getProductNotificationEventsQueue(), notification);
