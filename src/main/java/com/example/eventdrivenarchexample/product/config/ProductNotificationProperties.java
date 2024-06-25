@@ -1,6 +1,6 @@
 package com.example.eventdrivenarchexample.product.config;
 
-import com.example.eventdrivenarchexample.app.dto.PushNotificationDTO;
+import com.example.eventdrivenarchexample.app.dto.NotificationDTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,8 +12,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "push-notifications.product")
 public class ProductNotificationProperties {
 
-    private PushNotificationDTO creationFailed;
+    private NotificationDTO creationFailed;
 
-    private PushNotificationDTO creationSuccess;
+    private NotificationDTO creationSuccess;
 
 }

@@ -9,7 +9,7 @@ import java.text.MessageFormat;
 @Setter
 @Getter
 @NoArgsConstructor
-public class PushNotificationDTO {
+public class NotificationDTO {
 
     private String title;
 

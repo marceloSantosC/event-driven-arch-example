@@ -25,8 +25,10 @@ event-queues:
 push-notifications:
   product:
     creation-failed:
-      title: Failed to create product with name {0}.
-      message: Product with name {0} created with id {1}.
+      title: Failed to create product {0}.
+      message: Failed to create product with name {0} because {1}.
     creation-success:
-      title: Product with name {0} created.
-      message: Product with name {0} couldn't be created because {1}.
+      title: Product {0} created.
+      message: Product with name {0} created with id {1}.
+server:
+  port: 8080

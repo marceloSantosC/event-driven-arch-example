@@ -12,4 +12,9 @@ public class MessageBrokerException extends RuntimeException {
         this.queueName = queueName;
     }
 
+    public MessageBrokerException(String message, String queueName, Exception e) {
+        super(message, e);
+        this.queueName = queueName;
+    }
+
 }

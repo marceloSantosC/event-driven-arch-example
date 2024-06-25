@@ -1,16 +1,16 @@
 package com.example.eventdrivenarchexample;
 
-import io.awspring.cloud.sqs.operations.SqsTemplate;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
 
 @SpringBootApplication
 public class EventDrivenArchExampleApplication {
 
 
-	public static void main(String[] args) {
-		SpringApplication.run(EventDrivenArchExampleApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplicationBuilder builder = new SpringApplicationBuilder(EventDrivenArchExampleApplication.class);
+        builder.headless(false);
+        builder.run(args);
+    }
 }
