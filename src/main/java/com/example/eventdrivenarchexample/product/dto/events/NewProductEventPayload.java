@@ -15,7 +15,9 @@ public record NewProductEventPayload(
 
         BigDecimal price,
 
-        String eventId
+        String eventId,
+
+        String callbackQueue
 
 ) {
 }

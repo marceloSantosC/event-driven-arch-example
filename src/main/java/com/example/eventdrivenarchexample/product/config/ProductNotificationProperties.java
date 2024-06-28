@@ -16,4 +16,8 @@ public class ProductNotificationProperties {
 
     private NotificationDTO creationSuccess;
 
+    private NotificationDTO updateSuccess;
+
+    private NotificationDTO updateFailed;
+
 }

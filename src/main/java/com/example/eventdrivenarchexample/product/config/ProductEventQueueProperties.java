@@ -15,4 +15,5 @@ public class ProductEventQueueProperties {
 
     @Value("${event-queues.product.notification-events}")
     private String productNotificationEventsQueue;
+    
 }

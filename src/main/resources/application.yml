@@ -30,5 +30,11 @@ push-notifications:
     creation-success:
       title: Product {0} created.
       message: Product with name {0} created with id {1}.
+    update-failed:
+      title: Product {0} couldn't be updated.
+      message: Failed to update product because {1}.
+    update-success:
+      title: Product {0} updated.
+      message: Product update successfully.
 server:
   port: 8080

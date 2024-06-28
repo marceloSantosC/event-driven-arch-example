@@ -1,6 +1,7 @@
 package com.example.eventdrivenarchexample.product.entity;
 
 
+import com.example.eventdrivenarchexample.product.dto.events.UpdateProductEventPayload;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,5 +33,23 @@ public class ProductEntity {
 
     @Column(name = "PRICE", nullable = false)
     private BigDecimal price;
+
+    public void copyNonNullValuesFrom(UpdateProductEventPayload payload) {
+        if (name != null) {
+            name = payload.name();
+        }
+
+        if (color != null) {
+            color = payload.color();
+        }
+
+        if (quantity != null) {
+            quantity = payload.quantity();
+        }
+
+        if (price != null) {
+            price = payload.price();
+        }
+    }
 
 }
