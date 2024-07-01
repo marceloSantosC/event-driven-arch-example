@@ -13,9 +13,14 @@ aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-received-
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-create-events --profile=localstack
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-failed-events --profile=localstack
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-notification-events --profile=localstack
+aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-queried-products-result-events --profile=localstack
 
 
 # PRODUCT
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-create-events --profile=localstack
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-update-events --profile=localstack
 aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-notification-events --profile=localstack
+aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-query-events --profile=localstack
+
+
+aws sqs --endpoint-url=http://localhost:4566 purge-queue --queue-name product-query-events --profile=localstack

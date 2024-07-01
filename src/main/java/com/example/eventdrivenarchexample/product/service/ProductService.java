@@ -3,9 +3,7 @@ package com.example.eventdrivenarchexample.product.service;
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductEventQueueProperties;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
-import com.example.eventdrivenarchexample.product.dto.events.NewProductEventPayload;
-import com.example.eventdrivenarchexample.product.dto.events.ProductEventCallbackPayload;
-import com.example.eventdrivenarchexample.product.dto.events.UpdateProductEventPayload;
+import com.example.eventdrivenarchexample.product.dto.events.*;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
@@ -15,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -29,6 +29,11 @@ public class ProductService {
 
     private final ProductEventQueueProperties productEventQueues;
 
+    public QueryProductsResponseDataEventPayload queryProduct(QueryProductsEventPayload payload) {
+        List<ProductEntity> retrievedProducts = productRepository.findAllById(payload.productIds());
+        return QueryProductsResponseDataEventPayload.valueOf(payload.eventId(), retrievedProducts);
+    }
+
     public void createProduct(NewProductEventPayload eventPayload) {
         log.info("Creating product with name {}...", eventPayload.name());
 
@@ -41,7 +46,7 @@ public class ProductService {
 
         var product = ProductMapper.newProductDTOToProductEntity(eventPayload);
         productRepository.save(product);
-        log.info("Product with name {} created with id {}.", product.getId(), product.getId());
+        log.info("Product with name {} created with id {}.", product.getName(), product.getId());
         notifyProductCreationSuccess(product, eventPayload);
 
     }
