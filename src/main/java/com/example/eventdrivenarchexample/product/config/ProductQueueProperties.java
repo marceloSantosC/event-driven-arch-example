@@ -8,12 +8,16 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Configuration
 @ConfigurationProperties(prefix = "event-queues.product")
-public class ProductEventQueueProperties {
+public class ProductQueueProperties {
 
     @Value("${event-queues.product.create-events}")
     private String createEventsQueue;
 
     @Value("${event-queues.product.notification-events}")
-    private String productNotificationEventsQueue;
-    
+    private String notificationEventsQueue;
+
+
+    @Value("${event-queues.product.query-events}")
+    private String queryEventsQueue;
+
 }

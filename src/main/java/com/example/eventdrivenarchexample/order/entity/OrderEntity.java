@@ -1,5 +1,6 @@
 package com.example.eventdrivenarchexample.order.entity;
 
+import com.example.eventdrivenarchexample.order.dto.events.NewOrderEventPayload;
 import com.example.eventdrivenarchexample.order.enumeration.CustomerDocumentType;
 import com.example.eventdrivenarchexample.order.enumeration.OrderStatus;
 import jakarta.persistence.*;
@@ -24,7 +25,7 @@ public class OrderEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "order", cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
     private List<OrderProductEntity> products;
 
     private BigDecimal total;
@@ -37,4 +38,12 @@ public class OrderEntity {
 
     private LocalDateTime creationDate;
 
+    public static OrderEntity valueOf(NewOrderEventPayload newOrder) {
+        return OrderEntity.builder()
+                .status(OrderStatus.CREATED)
+                .customerDocument(newOrder.customerDocument())
+                .customerDocumentType(newOrder.documentType())
+                .creationDate(LocalDateTime.now())
+                .build();
+    }
 }

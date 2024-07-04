@@ -1,8 +1,8 @@
 package com.example.eventdrivenarchexample.product.service;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
-import com.example.eventdrivenarchexample.product.config.ProductEventQueueProperties;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
+import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
 import com.example.eventdrivenarchexample.product.dto.events.*;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
@@ -27,7 +27,7 @@ public class ProductService {
 
     private final ProductNotificationProperties notificationProperties;
 
-    private final ProductEventQueueProperties productEventQueues;
+    private final ProductQueueProperties productEventQueues;
 
     public QueryProductsResponseDataEventPayload queryProduct(QueryProductsEventPayload payload) {
         List<ProductEntity> retrievedProducts = productRepository.findAllById(payload.productIds());
@@ -55,7 +55,7 @@ public class ProductService {
         var notification = notificationProperties.getCreationFailed();
         notification.formatMessage(payload.name(), "the product already exists");
         notification.formatTittle(payload.name());
-        sqsClient.sendToSQS(productEventQueues.getProductNotificationEventsQueue(), notification);
+        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
             var callbackPayload = ProductEventCallbackPayload.builder()
@@ -73,7 +73,7 @@ public class ProductService {
         var notification = notificationProperties.getCreationSuccess();
         notification.formatTittle(product.getName());
         notification.formatMessage(product.getName(), product.getId().toString());
-        sqsClient.sendToSQS(productEventQueues.getProductNotificationEventsQueue(), notification);
+        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
             var callbackPayload = ProductEventCallbackPayload.builder()
@@ -115,7 +115,7 @@ public class ProductService {
         var notification = notificationProperties.getUpdateFailed();
         notification.formatMessage(reason);
         notification.formatTittle(payload.id().toString());
-        sqsClient.sendToSQS(productEventQueues.getProductNotificationEventsQueue(), notification);
+        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
             var callbackPayload = ProductEventCallbackPayload.builder()
@@ -132,7 +132,7 @@ public class ProductService {
     private void notifyProductUpdateEventSuccess(UpdateProductEventPayload payload) {
         var notification = notificationProperties.getUpdateSuccess();
         notification.formatTittle(payload.id().toString());
-        sqsClient.sendToSQS(productEventQueues.getProductNotificationEventsQueue(), notification);
+        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
             var callbackPayload = ProductEventCallbackPayload.builder()
