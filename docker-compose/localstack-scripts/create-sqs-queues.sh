@@ -1,26 +1,32 @@
 #!/bin/bash
 
 localstack_url=http://localhost:4566
+declare -a queues
 
+# ORDER QUEUES
+queues+=(order-received-events)
+queues+=(order-create-events)
+queues+=(order-failed-events)
+queues+=(order-notification-events)
+queues+=(order-queried-products-result-events)
+
+# PRODUCT QUEUES
+queues+=(product-create-events)
+queues+=(product-update-events)
+queues+=(product-notification-events)
+queues+=(product-query-events)
+
+# Profile
 aws configure set aws_access_key_id localstack --profile=localstack
 aws configure set aws_secret_access_key localstack --profile=localstack
 aws configure set region sa-east-1 --profile=localstack
-
 export PROFILE=localstack
 
-# ORDER
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-received-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-create-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-failed-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-notification-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name order-queried-products-result-events --profile=localstack
+# Queue Creation
+for queue in "${queues[@]}"
+do
+        aws sqs --endpoint-url=$localstack_url create-queue --queue-name "$queue" --profile=localstack
+done
 
 
-# PRODUCT
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-create-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-update-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-notification-events --profile=localstack
-aws sqs --endpoint-url=$localstack_url create-queue --queue-name product-query-events --profile=localstack
 
-
-aws sqs --endpoint-url=http://localhost:4566 purge-queue --queue-name product-query-events --profile=localstack
