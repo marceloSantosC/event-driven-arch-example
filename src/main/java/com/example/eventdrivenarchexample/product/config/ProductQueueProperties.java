@@ -16,8 +16,4 @@ public class ProductQueueProperties {
     @Value("${event-queues.product.notification-events}")
     private String notificationEventsQueue;
 
-
-    @Value("${event-queues.product.query-events}")
-    private String queryEventsQueue;
-
 }

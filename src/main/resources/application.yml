@@ -27,12 +27,10 @@ event-queues:
     create-events: order-create-events
     failed-events: order-failed-events
     notification-events: order-notification-events
-    queried-products-result-events: order-queried-products-result-events
   product:
     create-events: product-create-events
     update-events: product-update-events
     notification-events: product-notification-events
-    query-events: product-query-events
     take-events: product-take-events
 
 push-notifications:

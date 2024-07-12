@@ -8,13 +8,12 @@ queues+=(order-received-events)
 queues+=(order-create-events)
 queues+=(order-failed-events)
 queues+=(order-notification-events)
-queues+=(order-queried-products-result-events)
+queues+=(order-take-products-result-events)
 
 # PRODUCT QUEUES
 queues+=(product-create-events)
 queues+=(product-update-events)
 queues+=(product-notification-events)
-queues+=(product-query-events)
 queues+=(product-take-events)
 
 # Profile

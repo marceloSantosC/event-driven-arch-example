@@ -3,7 +3,9 @@ package com.example.eventdrivenarchexample.product.service;
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
 import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
-import com.example.eventdrivenarchexample.product.dto.events.*;
+import com.example.eventdrivenarchexample.product.dto.events.NewProductEventPayload;
+import com.example.eventdrivenarchexample.product.dto.events.ProductEventCallbackPayload;
+import com.example.eventdrivenarchexample.product.dto.events.UpdateProductEventPayload;
 import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsRequest;
 import com.example.eventdrivenarchexample.product.dto.events.response.TakeProductsResponse;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
@@ -34,11 +36,6 @@ public class ProductService {
     private final ProductNotificationProperties notificationProperties;
 
     private final ProductQueueProperties productEventQueues;
-
-    public QueryProductsResponseDataEventPayload queryProduct(QueryProductsEventPayload payload) {
-        List<ProductEntity> retrievedProducts = productRepository.findAllById(payload.productIds());
-        return QueryProductsResponseDataEventPayload.valueOf(payload.eventId(), retrievedProducts);
-    }
 
     public void createProduct(NewProductEventPayload eventPayload) {
         log.info("Creating product with name {}...", eventPayload.name());

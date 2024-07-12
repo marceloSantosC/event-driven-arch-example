@@ -19,10 +19,4 @@ public class OrderQueueProperties {
     @Value("${event-queues.order.failed-events}")
     private String failedOrdersQueue;
 
-    @Value("${event-queues.product.query-events}")
-    private String queryProductsQueue;
-
-    @Value("${event-queues.order.queried-products-result-events}")
-    private String queriedProductsResultQueue;
-
 }

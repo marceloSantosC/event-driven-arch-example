@@ -3,7 +3,6 @@ package com.example.eventdrivenarchexample.order.service;
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.order.config.OrderQueueProperties;
 import com.example.eventdrivenarchexample.order.dto.events.NewOrderEventPayload;
-import com.example.eventdrivenarchexample.order.dto.events.QueryProductsEventPayload;
 import com.example.eventdrivenarchexample.order.entity.OrderEntity;
 import com.example.eventdrivenarchexample.order.entity.OrderProductEntity;
 import com.example.eventdrivenarchexample.order.entity.OrderProductEntityID;
@@ -39,17 +38,6 @@ public class OrderService {
                         .build())
                 .toList();
         orderProductRepository.saveAll(orderProducts);
-
-
-        var productIds = newOrder.products().stream().map(NewOrderEventPayload.Product::id).toList();
-        var queryPayload = QueryProductsEventPayload.builder()
-                .callbackQueue(orderQueueProperties.getQueriedProductsResultQueue())
-                .eventId(order.getId().toString())
-                .productIds(productIds)
-                .build();
-
-
-        sqsClient.sendToSQS(orderQueueProperties.getQueryProductsQueue(), queryPayload);
 
     }
 
