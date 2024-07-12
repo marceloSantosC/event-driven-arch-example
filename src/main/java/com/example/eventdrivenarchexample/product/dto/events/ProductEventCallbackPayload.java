@@ -6,7 +6,7 @@ import lombok.Builder;
 
 @Builder
 public record ProductEventCallbackPayload(
-        
+
         String eventId,
 
         Long productId,

@@ -52,4 +52,13 @@ public class ProductEntity {
         }
     }
 
+    public boolean quantityCanBeTaken(Long quantityToTake) {
+        long finalQuantity = quantity - quantityToTake;
+        return finalQuantity >= 0;
+    }
+
+    public void takeQuantity(Long quantityToTake) {
+        quantity = quantity - quantityToTake;
+    }
+
 }

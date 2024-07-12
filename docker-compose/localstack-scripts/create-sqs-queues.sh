@@ -15,6 +15,7 @@ queues+=(product-create-events)
 queues+=(product-update-events)
 queues+=(product-notification-events)
 queues+=(product-query-events)
+queues+=(product-take-events)
 
 # Profile
 aws configure set aws_access_key_id localstack --profile=localstack

@@ -33,6 +33,7 @@ event-queues:
     update-events: product-update-events
     notification-events: product-notification-events
     query-events: product-query-events
+    take-events: product-take-events
 
 push-notifications:
   product:
