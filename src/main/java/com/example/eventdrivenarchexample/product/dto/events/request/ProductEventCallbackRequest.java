@@ -1,11 +1,11 @@
-package com.example.eventdrivenarchexample.product.dto.events;
+package com.example.eventdrivenarchexample.product.dto.events.request;
 
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import lombok.Builder;
 
 @Builder
-public record ProductEventCallbackPayload(
+public record ProductEventCallbackRequest(
 
         String eventId,
 

@@ -3,16 +3,15 @@ package com.example.eventdrivenarchexample.product.service;
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
 import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
-import com.example.eventdrivenarchexample.product.dto.events.NewProductEventPayload;
-import com.example.eventdrivenarchexample.product.dto.events.ProductEventCallbackPayload;
-import com.example.eventdrivenarchexample.product.dto.events.UpdateProductEventPayload;
+import com.example.eventdrivenarchexample.product.dto.events.request.NewProductRequest;
+import com.example.eventdrivenarchexample.product.dto.events.request.ProductEventCallbackRequest;
 import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsRequest;
+import com.example.eventdrivenarchexample.product.dto.events.request.UpdateProductRequest;
 import com.example.eventdrivenarchexample.product.dto.events.response.TakeProductsResponse;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
-import com.example.eventdrivenarchexample.product.mapper.ProductMapper;
 import com.example.eventdrivenarchexample.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,7 @@ public class ProductService {
 
     private final ProductQueueProperties productEventQueues;
 
-    public void createProduct(NewProductEventPayload eventPayload) {
+    public void createProduct(NewProductRequest eventPayload) {
         log.info("Creating product with name {}...", eventPayload.name());
 
         if (productRepository.existsByName(eventPayload.name())) {
@@ -47,21 +46,22 @@ public class ProductService {
             return;
         }
 
-        var product = ProductMapper.newProductDTOToProductEntity(eventPayload);
+        var product = ProductEntity.valueOf(eventPayload);
+        
         productRepository.save(product);
         log.info("Product with name {} created with id {}.", product.getName(), product.getId());
         notifyProductCreationSuccess(product, eventPayload);
 
     }
 
-    private void notifyProductCreationFail(NewProductEventPayload payload) {
+    private void notifyProductCreationFail(NewProductRequest payload) {
         var notification = notificationProperties.getCreationFailed();
         notification.formatMessage(payload.name(), "the product already exists");
         notification.formatTittle(payload.name());
         sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackPayload.builder()
+            var callbackPayload = ProductEventCallbackRequest.builder()
                     .eventId(payload.eventId())
                     .eventType(ProductEventType.CREATION)
                     .eventResult(ProductEventResult.FAIL)
@@ -72,14 +72,14 @@ public class ProductService {
 
     }
 
-    private void notifyProductCreationSuccess(ProductEntity product, NewProductEventPayload payload) {
+    private void notifyProductCreationSuccess(ProductEntity product, NewProductRequest payload) {
         var notification = notificationProperties.getCreationSuccess();
         notification.formatTittle(product.getName());
         notification.formatMessage(product.getName(), product.getId().toString());
         sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackPayload.builder()
+            var callbackPayload = ProductEventCallbackRequest.builder()
                     .eventId(payload.eventId())
                     .productId(product.getId())
                     .eventType(ProductEventType.CREATION)
@@ -90,7 +90,7 @@ public class ProductService {
         }
     }
 
-    public void updateProduct(UpdateProductEventPayload payload) {
+    public void updateProduct(UpdateProductRequest payload) {
 
         var productOptional = productRepository.findById(payload.id());
 
@@ -114,14 +114,14 @@ public class ProductService {
 
     }
 
-    private void notifyProductUpdateEventFail(UpdateProductEventPayload payload, String reason) {
+    private void notifyProductUpdateEventFail(UpdateProductRequest payload, String reason) {
         var notification = notificationProperties.getUpdateFailed();
         notification.formatMessage(reason);
         notification.formatTittle(payload.id().toString());
         sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackPayload.builder()
+            var callbackPayload = ProductEventCallbackRequest.builder()
                     .eventId(payload.eventId())
                     .productId(payload.id())
                     .eventType(ProductEventType.UPDATE)
@@ -132,13 +132,13 @@ public class ProductService {
         }
     }
 
-    private void notifyProductUpdateEventSuccess(UpdateProductEventPayload payload) {
+    private void notifyProductUpdateEventSuccess(UpdateProductRequest payload) {
         var notification = notificationProperties.getUpdateSuccess();
         notification.formatTittle(payload.id().toString());
         sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackPayload.builder()
+            var callbackPayload = ProductEventCallbackRequest.builder()
                     .eventId(payload.eventId())
                     .productId(payload.id())
                     .eventType(ProductEventType.UPDATE)

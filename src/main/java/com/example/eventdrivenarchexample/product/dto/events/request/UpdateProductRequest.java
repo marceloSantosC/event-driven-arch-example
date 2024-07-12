@@ -1,11 +1,11 @@
-package com.example.eventdrivenarchexample.product.dto.events;
+package com.example.eventdrivenarchexample.product.dto.events.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record UpdateProductEventPayload(
+public record UpdateProductRequest(
 
         Long id,
 

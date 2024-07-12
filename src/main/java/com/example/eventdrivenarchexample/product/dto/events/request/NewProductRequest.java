@@ -1,11 +1,11 @@
-package com.example.eventdrivenarchexample.product.dto.events;
+package com.example.eventdrivenarchexample.product.dto.events.request;
 
 import lombok.Builder;
 
 import java.math.BigDecimal;
 
 @Builder
-public record NewProductEventPayload(
+public record NewProductRequest(
 
         String name,
 
