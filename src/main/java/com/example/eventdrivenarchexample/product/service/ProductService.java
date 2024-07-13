@@ -1,9 +1,8 @@
 package com.example.eventdrivenarchexample.product.service;
 
-import com.example.eventdrivenarchexample.app.client.SQSClient;
-import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
-import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
-import com.example.eventdrivenarchexample.product.dto.events.request.*;
+import com.example.eventdrivenarchexample.product.dto.events.request.NewProductDTO;
+import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsDTO;
+import com.example.eventdrivenarchexample.product.dto.events.request.UpdateProductDTO;
 import com.example.eventdrivenarchexample.product.dto.events.response.TakeProductsResponse;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
@@ -13,7 +12,6 @@ import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,12 +25,6 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-
-    private final SQSClient sqsClient;
-
-    private final ProductNotificationProperties notificationProperties;
-
-    private final ProductQueueProperties productEventQueues;
 
     public Long createProduct(NewProductDTO newProduct) {
         log.info("Creating product with name {}...", newProduct.name());
@@ -51,67 +43,25 @@ public class ProductService {
     }
 
 
-    public void updateProduct(UpdateProductDTO payload) {
+    public void updateProduct(UpdateProductDTO updateProductDTO) {
 
-        var productOptional = productRepository.findById(payload.id());
-
-        if (productOptional.isEmpty()) {
-            log.error("Couldn't update product with id {}. Product does not exists.", payload.id());
-            // TODO: CRIAR E LANÇAR UMA EXCEPTION AQUI
-            notifyProductUpdateEventFail(payload, "the product does not exists");
-            return;
+        if (updateProductDTO.quantity() <= 0) {
+            log.error("Couldn't update product with id {}. Negative quantity, value: {}.", updateProductDTO.id(), updateProductDTO.quantity());
+            String reason = "the product quantity shouldn't be negative";
+            throw new ProductException("Failed to update: Product quantity shouldn't be negative.", false, reason);
         }
 
-        var product = productOptional.get();
-        if (product.getQuantity() <= 0) {
-            log.error("Couldn't update product with id {}. Negative quantity, value: {}.", payload.id(), payload.quantity());
-            // TODO: CRIAR E LANÇAR UMA EXCEPTION AQUI
-            notifyProductUpdateEventFail(payload, "Product quantity shouldn't be negative.");
-            return;
-        }
+        var product = productRepository.findById(updateProductDTO.id())
+                .orElseThrow(() -> {
+                    log.error("Couldn't update product with id {}. Product does not exists.", updateProductDTO.id());
+                    return new ProductException("Failed to update: Product does not exists", false, "the product does not exists.");
+                });
 
-
-        product.copyNonNullValuesFrom(payload);
+        product.copyNonNullValuesFrom(updateProductDTO);
         productRepository.save(product);
-        notifyProductUpdateEventSuccess(payload);
 
     }
 
-    private void notifyProductUpdateEventFail(UpdateProductDTO payload, String reason) {
-        var notification = NotificationBodyDTO.valueOf(notificationProperties.getUpdateFailed());
-        notification.formatMessage(reason);
-        notification.formatTittle(payload.id().toString());
-        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
-
-        if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackDTO.builder()
-                    .eventId(payload.eventId())
-                    .productId(payload.id())
-                    .eventType(ProductEventType.UPDATE)
-                    .eventResult(ProductEventResult.FAIL)
-                    .build();
-
-            sqsClient.sendToSQS(payload.callbackQueue(), callbackPayload);
-        }
-    }
-
-    private void notifyProductUpdateEventSuccess(UpdateProductDTO payload) {
-        var notification = NotificationBodyDTO.valueOf(notificationProperties.getUpdateSuccess());
-        notification.formatTittle(payload.id().toString());
-        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
-
-        if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackDTO.builder()
-                    .eventId(payload.eventId())
-                    .productId(payload.id())
-                    .eventType(ProductEventType.UPDATE)
-                    .eventResult(ProductEventResult.SUCCESS)
-                    .build();
-
-            sqsClient.sendToSQS(payload.callbackQueue(), callbackPayload);
-        }
-
-    }
 
     public TakeProductsResponse takeProduct(TakeProductsDTO eventPayload) {
 
