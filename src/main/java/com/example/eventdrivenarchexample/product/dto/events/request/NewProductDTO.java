@@ -1,13 +1,11 @@
 package com.example.eventdrivenarchexample.product.dto.events.request;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record UpdateProductRequest(
-
-        Long id,
+@Builder
+public record NewProductDTO(
 
         String name,
 
@@ -17,9 +15,9 @@ public record UpdateProductRequest(
 
         BigDecimal price,
 
-        String callbackQueue,
+        String eventId,
 
-        String eventId
+        String callbackQueue
 
 ) {
 }

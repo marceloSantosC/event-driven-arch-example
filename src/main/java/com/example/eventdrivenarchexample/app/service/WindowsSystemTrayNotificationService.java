@@ -1,7 +1,7 @@
 package com.example.eventdrivenarchexample.app.service;
 
-import com.example.eventdrivenarchexample.app.dto.NotificationDTO;
 import com.example.eventdrivenarchexample.app.exception.NotificationException;
+import com.example.eventdrivenarchexample.product.dto.events.request.NotificationBodyDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,7 @@ import java.awt.*;
 @Service
 public class WindowsSystemTrayNotificationService implements NotificationService {
 
-    public void send(NotificationDTO notificationDTO) {
+    public void send(NotificationBodyDTO notificationBodyDTO) {
         try {
             if (SystemTray.isSupported()) {
                 SystemTray tray = SystemTray.getSystemTray();
@@ -23,7 +23,7 @@ public class WindowsSystemTrayNotificationService implements NotificationService
                 trayIcon.setToolTip("System tray icon");
                 tray.add(trayIcon);
 
-                trayIcon.displayMessage(notificationDTO.getTitle(), notificationDTO.getMessage(), TrayIcon.MessageType.INFO);
+                trayIcon.displayMessage(notificationBodyDTO.getTitle(), notificationBodyDTO.getMessage(), TrayIcon.MessageType.INFO);
             } else {
                 log.error("Failed to send system tray notification: System tray not supported!");
                 throw new NotificationException("System tray is not supported.", false);

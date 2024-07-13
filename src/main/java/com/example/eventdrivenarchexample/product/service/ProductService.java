@@ -3,15 +3,13 @@ package com.example.eventdrivenarchexample.product.service;
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
 import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
-import com.example.eventdrivenarchexample.product.dto.events.request.NewProductRequest;
-import com.example.eventdrivenarchexample.product.dto.events.request.ProductEventCallbackRequest;
-import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsRequest;
-import com.example.eventdrivenarchexample.product.dto.events.request.UpdateProductRequest;
+import com.example.eventdrivenarchexample.product.dto.events.request.*;
 import com.example.eventdrivenarchexample.product.dto.events.response.TakeProductsResponse;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
+import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,66 +34,30 @@ public class ProductService {
 
     private final ProductQueueProperties productEventQueues;
 
-    public void createProduct(NewProductRequest eventPayload) {
-        log.info("Creating product with name {}...", eventPayload.name());
+    public Long createProduct(NewProductDTO newProduct) {
+        log.info("Creating product with name {}...", newProduct.name());
 
-        if (productRepository.existsByName(eventPayload.name())) {
-            log.error("Couldn't create product with name {}: Product already exists.", eventPayload.name());
-
-            notifyProductCreationFail(eventPayload);
-            return;
+        if (productRepository.existsByName(newProduct.name())) {
+            log.error("Couldn't create product with name {}: Product already exists.", newProduct.name());
+            String reason = "the product already exists.";
+            throw new ProductException(String.format("Product with name %s already exists.", newProduct.name()), false, reason);
         }
 
-        var product = ProductEntity.valueOf(eventPayload);
-        
+        var product = ProductEntity.valueOf(newProduct);
+
         productRepository.save(product);
         log.info("Product with name {} created with id {}.", product.getName(), product.getId());
-        notifyProductCreationSuccess(product, eventPayload);
-
+        return product.getId();
     }
 
-    private void notifyProductCreationFail(NewProductRequest payload) {
-        var notification = notificationProperties.getCreationFailed();
-        notification.formatMessage(payload.name(), "the product already exists");
-        notification.formatTittle(payload.name());
-        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
-        if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackRequest.builder()
-                    .eventId(payload.eventId())
-                    .eventType(ProductEventType.CREATION)
-                    .eventResult(ProductEventResult.FAIL)
-                    .build();
-            sqsClient.sendToSQS(payload.callbackQueue(), callbackPayload);
-        }
-
-
-    }
-
-    private void notifyProductCreationSuccess(ProductEntity product, NewProductRequest payload) {
-        var notification = notificationProperties.getCreationSuccess();
-        notification.formatTittle(product.getName());
-        notification.formatMessage(product.getName(), product.getId().toString());
-        sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
-
-        if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackRequest.builder()
-                    .eventId(payload.eventId())
-                    .productId(product.getId())
-                    .eventType(ProductEventType.CREATION)
-                    .eventResult(ProductEventResult.SUCCESS)
-                    .build();
-
-            sqsClient.sendToSQS(payload.callbackQueue(), callbackPayload);
-        }
-    }
-
-    public void updateProduct(UpdateProductRequest payload) {
+    public void updateProduct(UpdateProductDTO payload) {
 
         var productOptional = productRepository.findById(payload.id());
 
         if (productOptional.isEmpty()) {
             log.error("Couldn't update product with id {}. Product does not exists.", payload.id());
+            // TODO: CRIAR E LANÇAR UMA EXCEPTION AQUI
             notifyProductUpdateEventFail(payload, "the product does not exists");
             return;
         }
@@ -103,6 +65,7 @@ public class ProductService {
         var product = productOptional.get();
         if (product.getQuantity() <= 0) {
             log.error("Couldn't update product with id {}. Negative quantity, value: {}.", payload.id(), payload.quantity());
+            // TODO: CRIAR E LANÇAR UMA EXCEPTION AQUI
             notifyProductUpdateEventFail(payload, "Product quantity shouldn't be negative.");
             return;
         }
@@ -114,14 +77,14 @@ public class ProductService {
 
     }
 
-    private void notifyProductUpdateEventFail(UpdateProductRequest payload, String reason) {
-        var notification = notificationProperties.getUpdateFailed();
+    private void notifyProductUpdateEventFail(UpdateProductDTO payload, String reason) {
+        var notification = NotificationBodyDTO.valueOf(notificationProperties.getUpdateFailed());
         notification.formatMessage(reason);
         notification.formatTittle(payload.id().toString());
         sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackRequest.builder()
+            var callbackPayload = ProductEventCallbackDTO.builder()
                     .eventId(payload.eventId())
                     .productId(payload.id())
                     .eventType(ProductEventType.UPDATE)
@@ -132,13 +95,13 @@ public class ProductService {
         }
     }
 
-    private void notifyProductUpdateEventSuccess(UpdateProductRequest payload) {
-        var notification = notificationProperties.getUpdateSuccess();
+    private void notifyProductUpdateEventSuccess(UpdateProductDTO payload) {
+        var notification = NotificationBodyDTO.valueOf(notificationProperties.getUpdateSuccess());
         notification.formatTittle(payload.id().toString());
         sqsClient.sendToSQS(productEventQueues.getNotificationEventsQueue(), notification);
 
         if (StringUtils.isNotBlank(payload.callbackQueue())) {
-            var callbackPayload = ProductEventCallbackRequest.builder()
+            var callbackPayload = ProductEventCallbackDTO.builder()
                     .eventId(payload.eventId())
                     .productId(payload.id())
                     .eventType(ProductEventType.UPDATE)
@@ -150,9 +113,9 @@ public class ProductService {
 
     }
 
-    public TakeProductsResponse takeProduct(TakeProductsRequest eventPayload) {
+    public TakeProductsResponse takeProduct(TakeProductsDTO eventPayload) {
 
-        var productIds = eventPayload.products().stream().map(TakeProductsRequest.Product::id).toList();
+        var productIds = eventPayload.products().stream().map(TakeProductsDTO.Product::id).toList();
         var products = productRepository.findAllById(productIds);
 
         if (products.size() != productIds.size()) {
@@ -188,7 +151,7 @@ public class ProductService {
                 .build();
     }
 
-    private List<TakeProductsResponse.Product> tryToTakeProductsFromStock(Map<ProductEntity, TakeProductsRequest.Product> matchedProducts, boolean hasProductsOutOfStock) {
+    private List<TakeProductsResponse.Product> tryToTakeProductsFromStock(Map<ProductEntity, TakeProductsDTO.Product> matchedProducts, boolean hasProductsOutOfStock) {
         var productsToReturn = matchedProducts.entrySet().stream().map(entry -> {
             var product = entry.getKey();
             var requestedProduct = entry.getValue();
@@ -210,7 +173,7 @@ public class ProductService {
     }
 
 
-    private Map<ProductEntity, TakeProductsRequest.Product> matchFoundProductsWithRequestedProductSById(List<TakeProductsRequest.Product> requestedProducts, List<ProductEntity> products) {
+    private Map<ProductEntity, TakeProductsDTO.Product> matchFoundProductsWithRequestedProductSById(List<TakeProductsDTO.Product> requestedProducts, List<ProductEntity> products) {
         return requestedProducts.stream()
                 .map(requestedProduct -> {
                     var matchingProduct = products.stream()

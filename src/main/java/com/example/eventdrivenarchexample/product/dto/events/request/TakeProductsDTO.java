@@ -2,7 +2,7 @@ package com.example.eventdrivenarchexample.product.dto.events.request;
 
 import java.util.List;
 
-public record TakeProductsRequest(
+public record TakeProductsDTO(
         String eventId,
         String callbackQueue,
         List<Product> products

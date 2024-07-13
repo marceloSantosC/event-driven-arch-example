@@ -5,7 +5,7 @@ import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import lombok.Builder;
 
 @Builder
-public record ProductEventCallbackRequest(
+public record ProductEventCallbackDTO(
 
         String eventId,
 

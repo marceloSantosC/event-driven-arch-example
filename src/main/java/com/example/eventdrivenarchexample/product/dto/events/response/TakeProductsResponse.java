@@ -1,6 +1,6 @@
 package com.example.eventdrivenarchexample.product.dto.events.response;
 
-import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsRequest;
+import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsDTO;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
@@ -35,7 +35,7 @@ public record TakeProductsResponse(
                     .build();
         }
 
-        public static Product valueOf(TakeProductsRequest.Product product) {
+        public static Product valueOf(TakeProductsDTO.Product product) {
             return TakeProductsResponse.Product.builder()
                     .id(product.id())
                     .status(TakeProductStatus.NOT_FOUND)

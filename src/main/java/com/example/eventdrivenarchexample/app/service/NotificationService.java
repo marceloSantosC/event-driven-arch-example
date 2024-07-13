@@ -1,9 +1,9 @@
 package com.example.eventdrivenarchexample.app.service;
 
-import com.example.eventdrivenarchexample.app.dto.NotificationDTO;
+import com.example.eventdrivenarchexample.product.dto.events.request.NotificationBodyDTO;
 
 public interface NotificationService {
 
-    void send(NotificationDTO notificationDTO);
+    void send(NotificationBodyDTO notificationBodyDTO);
 
 }

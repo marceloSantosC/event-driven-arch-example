@@ -1,7 +1,7 @@
 package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
-import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsRequest;
+import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsDTO;
 import com.example.eventdrivenarchexample.product.service.ProductService;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +25,7 @@ public class TakeProductSQSListener {
     @SqsListener("${event-queues.product.take-events}")
     public void onTakeProductEvent(String message) {
         try {
-            var eventPayload = objectMapper.readValue(message, TakeProductsRequest.class);
+            var eventPayload = objectMapper.readValue(message, TakeProductsDTO.class);
             var responsePayload = productService.takeProduct(eventPayload);
             sqsClient.sendToSQS(eventPayload.callbackQueue(), responsePayload);
         } catch (JacksonException e) {
