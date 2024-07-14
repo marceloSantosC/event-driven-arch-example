@@ -2,6 +2,7 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
+import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
 import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
 import com.example.eventdrivenarchexample.product.dto.input.UpdateProductInput;
 import com.example.eventdrivenarchexample.product.dto.output.UpdatedProductEvent;
@@ -11,6 +12,7 @@ import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
 import com.example.eventdrivenarchexample.product.service.ProductService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.extern.slf4j.Slf4j;
@@ -42,21 +44,24 @@ public class UpdateProductSQSListener extends EventListenerWithNotification {
     }
 
     @SqsListener(queueNames = {"${event-queues.product.update-events}"})
-    public void onCreateProductEvent(String payload, @Headers Map<String, Object> headers) {
+    public void onUpdateProductEvent(String payload, @Headers Map<String, Object> headers) {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
-        UpdateProductInput event = null;
+        UpdateProductInput eventBody = null;
+        EventPayload<UpdateProductInput> event = null;
         try {
-            event = objectMapper.readValue(payload, UpdateProductInput.class);
-            productService.updateProduct(event);
+            event = objectMapper.readValue(payload, new TypeReference<>() {
+            });
+            eventBody = event.getBody();
+
+            productService.updateProduct(eventBody);
 
             var notification = NotificationBodyInput.valueOf(notificationProperties.getUpdateSuccess());
-            notification.formatTittle(event.id().toString());
+            notification.formatTittle(eventBody.id().toString());
             sendNotification(notification, traceId);
 
-            if (StringUtils.isNotBlank(event.callbackQueue())) {
-                sendEventResultToCallbackQueue(event, traceId, ProductEventResult.SUCCESS);
-            }
+            tryToSendEventResultToCallbackQueue(event, traceId, ProductEventResult.SUCCESS);
+
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize message for product event {} with trace id {}.", getEventType(), traceId);
         } catch (ProductException e) {
@@ -66,10 +71,11 @@ public class UpdateProductSQSListener extends EventListenerWithNotification {
             }
 
             var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getUpdateFailed());
-            notificationBody.formatTittle(event.name());
-            notificationBody.formatMessage(event.name(), e.getReason());
+            notificationBody.formatTittle(eventBody.name());
+            notificationBody.formatMessage(eventBody.name(), e.getReason());
             sendNotification(notificationBody, traceId);
-            sendEventResultToCallbackQueue(event, traceId, ProductEventResult.FAIL);
+
+            tryToSendEventResultToCallbackQueue(event, traceId, ProductEventResult.FAIL);
         }
 
     }
@@ -79,14 +85,20 @@ public class UpdateProductSQSListener extends EventListenerWithNotification {
         return ProductEventType.UPDATE;
     }
 
-    private void sendEventResultToCallbackQueue(UpdateProductInput event, String traceId, ProductEventResult result) {
+    private void tryToSendEventResultToCallbackQueue(EventPayload<UpdateProductInput> event, String traceId, ProductEventResult result) {
+
+        if (StringUtils.isBlank(event.getCallbackQueue())) {
+            return;
+        }
+
+        var eventBody = event.getBody();
         var callbackPayload = UpdatedProductEvent.builder()
-                .eventId(event.eventId())
-                .productId(event.id())
+                .eventId(eventBody.eventId())
+                .productId(eventBody.id())
                 .eventType(getEventType())
                 .eventResult(result)
                 .build();
 
-        sqsClient.sendToSQS(event.callbackQueue(), callbackPayload, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
+        sqsClient.sendToSQS(event.getCallbackQueue(), callbackPayload, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
     }
 }
