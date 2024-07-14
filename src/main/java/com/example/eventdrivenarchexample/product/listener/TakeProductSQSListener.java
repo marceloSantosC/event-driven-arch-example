@@ -2,6 +2,7 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
+import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
 import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
 import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
 import com.example.eventdrivenarchexample.product.dto.output.TakenProductOutput;
@@ -12,6 +13,7 @@ import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
 import com.example.eventdrivenarchexample.product.service.ProductService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus.*;
 
@@ -52,14 +55,16 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
 
 
     @SqsListener("${event-queues.product.take-events}")
-    public void onTakeProductEvent(String message, @Headers Map<String, Object> headers) {
+    public void onTakeProductEvent(String payload, @Headers Map<String, Object> headers) {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
 
 
         try {
-            var event = objectMapper.readValue(message, TakeProductsInput.class);
-            List<TakenProductOutput> products = productService.takeProduct(event);
+            EventPayload<TakeProductsInput> event = objectMapper.readValue(payload, new TypeReference<>() {
+            });
+
+            List<TakenProductOutput> products = productService.takeProduct(event.getBody());
 
             var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.status()));
 
@@ -71,15 +76,24 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
 
             var notificationDTO = hasProductsWithFailStatus ? notificationProperties.getTakeFailed() : notificationProperties.getTakeSuccess();
             var notificationBody = NotificationBodyInput.valueOf(notificationDTO);
-            var productIds = event.products().stream()
+
+
+            var productIds = event.getBody().products().stream()
                     .map(TakeProductsInput.Product::id)
-                    .toString();
-            notificationBody.formatMessage(productIds);
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+
+
+            if (hasProductsWithFailStatus) {
+                notificationBody.formatMessage(productIds, " check the individual products for more info.");
+            } else {
+                notificationBody.formatMessage(productIds);
+            }
 
             sendNotification(notificationBody, traceId);
 
-            if (StringUtils.isNotBlank(event.callbackQueue())) {
-                sqsClient.sendToSQS(event.callbackQueue(), eventResult, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
+            if (StringUtils.isNotBlank(event.getCallbackQueue())) {
+                sqsClient.sendToSQS(event.getCallbackQueue(), eventResult, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
             }
 
         } catch (JsonProcessingException e) {

@@ -52,6 +52,6 @@ push-notifications:
       message: Products {0} taken from stock.
     take-failed:
       title: Products not taken from stock.
-      message: Failed to take products {0} from stock because {1}.
+      message: Failed to take products {0} from stock {1}.
 server:
   port: 8080
