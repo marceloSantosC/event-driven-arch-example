@@ -1,6 +1,7 @@
 package com.example.eventdrivenarchexample.product.dto.input;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Setter
@@ -15,5 +16,8 @@ public class EventPayload<T> {
     private String callbackQueue;
 
     private String customId;
+
+    @JsonIgnore
+    private String traceId;
 
 }

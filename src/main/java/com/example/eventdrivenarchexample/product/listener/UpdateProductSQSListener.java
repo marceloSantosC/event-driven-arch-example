@@ -24,7 +24,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
-public class UpdateProductSQSListener extends EventListenerWithNotification {
+public class UpdateProductSQSListener extends EventListener {
 
     private final SQSClient sqsClient;
 
@@ -34,9 +34,12 @@ public class UpdateProductSQSListener extends EventListenerWithNotification {
 
     private final ProductNotificationProperties notificationProperties;
 
-    public UpdateProductSQSListener(ProductNotificationService notificationService, SQSClient sqsClient, ProductService productService,
-                                    ObjectMapper objectMapper, ProductNotificationProperties notificationProperties) {
-        super(notificationService);
+    public UpdateProductSQSListener(ProductNotificationService notificationService,
+                                    SQSClient sqsClient,
+                                    ProductService productService,
+                                    ObjectMapper objectMapper,
+                                    ProductNotificationProperties notificationProperties) {
+        super(notificationService, sqsClient);
         this.sqsClient = sqsClient;
         this.productService = productService;
         this.objectMapper = objectMapper;
@@ -52,6 +55,7 @@ public class UpdateProductSQSListener extends EventListenerWithNotification {
         try {
             event = objectMapper.readValue(payload, new TypeReference<>() {
             });
+            event.setTraceId(traceId);
             eventBody = event.getBody();
 
             productService.updateProduct(eventBody);

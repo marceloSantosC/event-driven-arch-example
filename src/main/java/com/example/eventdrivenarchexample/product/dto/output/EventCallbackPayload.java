@@ -10,7 +10,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventResultPayload<T> {
+public class EventCallbackPayload<T> {
 
     private T body;
 

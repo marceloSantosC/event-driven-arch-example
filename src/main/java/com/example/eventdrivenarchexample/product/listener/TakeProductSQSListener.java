@@ -6,7 +6,7 @@ import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
 import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
 import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
 import com.example.eventdrivenarchexample.product.dto.output.TakenProductOutput;
-import com.example.eventdrivenarchexample.product.dto.output.TakenProductsEvent;
+import com.example.eventdrivenarchexample.product.dto.output.TakenProductsEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
@@ -17,7 +17,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +28,7 @@ import static com.example.eventdrivenarchexample.product.enumeration.TakeProduct
 
 @Slf4j
 @Service
-public class TakeProductSQSListener extends EventListenerWithNotification {
+public class TakeProductSQSListener extends EventListener<TakenProductsEventResult> {
 
     private static final List<TakeProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_TAKEN, OUT_OF_STOCK);
 
@@ -39,18 +38,15 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
 
     private final ObjectMapper objectMapper;
 
-    private final SQSClient sqsClient;
-
     public TakeProductSQSListener(ProductNotificationService notificationService,
                                   ProductNotificationProperties notificationProperties,
                                   ProductService productService,
                                   ObjectMapper objectMapper,
                                   SQSClient sqsClient) {
-        super(notificationService);
+        super(notificationService, sqsClient);
         this.notificationProperties = notificationProperties;
         this.productService = productService;
         this.objectMapper = objectMapper;
-        this.sqsClient = sqsClient;
     }
 
 
@@ -63,24 +59,20 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
         try {
             EventPayload<TakeProductsInput> event = objectMapper.readValue(payload, new TypeReference<>() {
             });
+            event.setTraceId(traceId);
 
             List<TakenProductOutput> products = productService.takeProduct(event.getBody());
 
             var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.status()));
 
-            var resultPayload = TakenProductsEvent.builder()
-                    .type(ProductEventType.TAKE)
-                    .result(hasProductsWithFailStatus ? ProductEventResult.FAIL : ProductEventResult.SUCCESS)
-                    .products(products)
-                    .build();
+            ProductEventResult result = hasProductsWithFailStatus ? ProductEventResult.FAIL : ProductEventResult.SUCCESS;
+            var resultPayload = new TakenProductsEventResult(products);
 
 
-            NotificationBodyInput notification = getNotificationBody(resultPayload);
+            NotificationBodyInput notification = getNotificationBody(resultPayload, result);
             sendNotification(notification, traceId);
 
-            if (StringUtils.isNotBlank(event.getCallbackQueue())) {
-                sqsClient.sendToSQS(event.getCallbackQueue(), resultPayload, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
-            }
+            super.tryToSendEventResultToCallbackQueue(event, resultPayload, result);
 
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize message for product event {} with trace id {}.", getEventType(), traceId);
@@ -92,13 +84,13 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
         return ProductEventType.TAKE;
     }
 
-    private NotificationBodyInput getNotificationBody(TakenProductsEvent resultPayload) {
+    private NotificationBodyInput getNotificationBody(TakenProductsEventResult resultPayload, ProductEventResult result) {
         var productIds = resultPayload.products().stream()
                 .map(TakenProductOutput::id)
                 .map(Object::toString)
                 .collect(Collectors.joining(", "));
 
-        if (ProductEventResult.FAIL.equals(resultPayload.result())) {
+        if (ProductEventResult.FAIL.equals(result)) {
             var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getTakeFailed());
             notificationBody.formatMessage(productIds, "check the individual products for more info");
             return notificationBody;

@@ -5,6 +5,8 @@ import com.example.eventdrivenarchexample.product.config.ProductNotificationProp
 import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
 import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
 import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
+import com.example.eventdrivenarchexample.product.dto.output.CreatedProductOutput;
+import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
@@ -21,7 +23,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
-public class CreateProductSQSListener extends EventListenerWithNotification {
+public class CreateProductSQSListener extends EventListener<CreatedProductOutput> {
 
     private final ObjectMapper objectMapper;
 
@@ -29,10 +31,12 @@ public class CreateProductSQSListener extends EventListenerWithNotification {
 
     private final ProductNotificationProperties notificationProperties;
 
-    public CreateProductSQSListener(ObjectMapper objectMapper, ProductService productService,
+    public CreateProductSQSListener(ObjectMapper objectMapper,
+                                    ProductService productService,
+                                    SQSClient sqsClient,
                                     ProductNotificationService notificationService,
                                     ProductNotificationProperties notificationProperties) {
-        super(notificationService);
+        super(notificationService, sqsClient);
         this.objectMapper = objectMapper;
         this.productService = productService;
         this.notificationProperties = notificationProperties;
@@ -44,17 +48,19 @@ public class CreateProductSQSListener extends EventListenerWithNotification {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
 
-        NewProductInput newProduct = null;
-        try {
-            EventPayload<NewProductInput> event = objectMapper.readValue(payload, new TypeReference<>() {
-            });
-            newProduct = event.getBody();
 
-            var id = productService.createProduct(event.getBody());
+        EventPayload<NewProductInput> event = null;
+        try {
+            event = objectMapper.readValue(payload, new TypeReference<>() {
+            });
+            event.setTraceId(traceId);
+
+            CreatedProductOutput createdProduct = productService.createProduct(event.getBody());
+            super.tryToSendEventResultToCallbackQueue(event, createdProduct, ProductEventResult.SUCCESS);
 
             var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getCreationSuccess());
-            notificationBody.formatTittle(newProduct.name());
-            notificationBody.formatMessage(newProduct.name(), id.toString());
+            notificationBody.formatTittle(event.getBody().name());
+            notificationBody.formatMessage(event.getBody().name(), createdProduct.id().toString());
             sendNotification(notificationBody, traceId);
 
         } catch (JsonProcessingException e) {
@@ -66,12 +72,15 @@ public class CreateProductSQSListener extends EventListenerWithNotification {
                 throw e;
             }
 
+            super.tryToSendEventResultToCallbackQueue(event, null, ProductEventResult.FAIL);
+
             var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getCreationFailed());
-            notificationBody.formatTittle(newProduct.name());
-            notificationBody.formatMessage(newProduct.name(), e.getReason());
+            notificationBody.formatTittle(event.getBody().name());
+            notificationBody.formatMessage(event.getBody().name(), e.getReason());
             sendNotification(notificationBody, traceId);
         }
     }
+
 
     @Override
     protected ProductEventType getEventType() {

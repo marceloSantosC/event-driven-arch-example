@@ -3,6 +3,7 @@ package com.example.eventdrivenarchexample.product.service;
 import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
 import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
 import com.example.eventdrivenarchexample.product.dto.input.UpdateProductInput;
+import com.example.eventdrivenarchexample.product.dto.output.CreatedProductOutput;
 import com.example.eventdrivenarchexample.product.dto.output.TakenProductOutput;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
@@ -24,7 +25,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    public Long createProduct(NewProductInput newProduct) {
+    public CreatedProductOutput createProduct(NewProductInput newProduct) {
         log.info("Creating product with name {}...", newProduct.name());
 
         if (productRepository.existsByName(newProduct.name())) {
@@ -37,7 +38,7 @@ public class ProductService {
 
         productRepository.save(product);
         log.info("Product with name {} created with id {}.", product.getName(), product.getId());
-        return product.getId();
+        return new CreatedProductOutput(product.getId());
     }
 
 
@@ -61,13 +62,14 @@ public class ProductService {
     }
 
 
-    public List<TakenProductOutput> takeProduct(TakeProductsInput eventPayload) {
+    public List<TakenProductOutput> takeProduct(TakeProductsInput productsToTake) {
 
-        var productIds = eventPayload.products().stream().map(TakeProductsInput.Product::id).toList();
+        var productIds = productsToTake.products().stream().map(TakeProductsInput.Product::id).toList();
         var products = productRepository.findAllById(productIds);
 
         if (products.size() != productIds.size()) {
-            return eventPayload.products().stream()
+
+            return productsToTake.products().stream()
                     .map(requestedProduct -> products.stream()
                             .filter(Objects::nonNull)
                             .filter(product -> product.getId().equals(requestedProduct.id()))
@@ -77,9 +79,10 @@ public class ProductService {
                     .toList();
         }
 
-        var matchedProducts = matchFoundProductsWithRequestedProductSById(eventPayload.products(), products);
+        var matchedProducts = matchFoundProductsWithRequestedProductSById(productsToTake.products(), products);
         var hasProductsOutOfStock = matchedProducts.entrySet().stream()
                 .anyMatch(entry -> ! entry.getKey().quantityCanBeTaken(entry.getValue().quantity()));
+
         return tryToTakeProductsFromStock(matchedProducts, hasProductsOutOfStock);
     }
 
