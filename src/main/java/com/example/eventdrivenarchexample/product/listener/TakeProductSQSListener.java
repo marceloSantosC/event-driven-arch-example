@@ -68,32 +68,18 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
 
             var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.status()));
 
-            var eventResult = TakenProductsEvent.builder()
+            var resultPayload = TakenProductsEvent.builder()
                     .type(ProductEventType.TAKE)
                     .result(hasProductsWithFailStatus ? ProductEventResult.FAIL : ProductEventResult.SUCCESS)
                     .products(products)
                     .build();
 
-            var notificationDTO = hasProductsWithFailStatus ? notificationProperties.getTakeFailed() : notificationProperties.getTakeSuccess();
-            var notificationBody = NotificationBodyInput.valueOf(notificationDTO);
 
-
-            var productIds = event.getBody().products().stream()
-                    .map(TakeProductsInput.Product::id)
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", "));
-
-
-            if (hasProductsWithFailStatus) {
-                notificationBody.formatMessage(productIds, " check the individual products for more info.");
-            } else {
-                notificationBody.formatMessage(productIds);
-            }
-
-            sendNotification(notificationBody, traceId);
+            NotificationBodyInput notification = getNotificationBody(resultPayload);
+            sendNotification(notification, traceId);
 
             if (StringUtils.isNotBlank(event.getCallbackQueue())) {
-                sqsClient.sendToSQS(event.getCallbackQueue(), eventResult, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
+                sqsClient.sendToSQS(event.getCallbackQueue(), resultPayload, Map.of(SQSClient.HEADER_TRACE_ID_NAME, traceId));
             }
 
         } catch (JsonProcessingException e) {
@@ -105,4 +91,22 @@ public class TakeProductSQSListener extends EventListenerWithNotification {
     protected ProductEventType getEventType() {
         return ProductEventType.TAKE;
     }
+
+    private NotificationBodyInput getNotificationBody(TakenProductsEvent resultPayload) {
+        var productIds = resultPayload.products().stream()
+                .map(TakenProductOutput::id)
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+
+        if (ProductEventResult.FAIL.equals(resultPayload.result())) {
+            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getTakeFailed());
+            notificationBody.formatMessage(productIds, "check the individual products for more info");
+            return notificationBody;
+        }
+
+        var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getTakeSuccess());
+        notificationBody.formatMessage(productIds);
+        return notificationBody;
+    }
+
 }
