@@ -1,12 +1,10 @@
 package com.example.eventdrivenarchexample.product.service;
 
-import com.example.eventdrivenarchexample.product.dto.events.request.NewProductDTO;
-import com.example.eventdrivenarchexample.product.dto.events.request.TakeProductsDTO;
-import com.example.eventdrivenarchexample.product.dto.events.request.UpdateProductDTO;
-import com.example.eventdrivenarchexample.product.dto.events.response.TakeProductsResponse;
+import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
+import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
+import com.example.eventdrivenarchexample.product.dto.input.UpdateProductInput;
+import com.example.eventdrivenarchexample.product.dto.output.TakenProductOutput;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
-import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
-import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.repository.ProductRepository;
@@ -26,7 +24,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    public Long createProduct(NewProductDTO newProduct) {
+    public Long createProduct(NewProductInput newProduct) {
         log.info("Creating product with name {}...", newProduct.name());
 
         if (productRepository.existsByName(newProduct.name())) {
@@ -43,7 +41,7 @@ public class ProductService {
     }
 
 
-    public void updateProduct(UpdateProductDTO updateProductDTO) {
+    public void updateProduct(UpdateProductInput updateProductDTO) {
 
         if (updateProductDTO.quantity() <= 0) {
             log.error("Couldn't update product with id {}. Negative quantity, value: {}.", updateProductDTO.id(), updateProductDTO.quantity());
@@ -63,56 +61,40 @@ public class ProductService {
     }
 
 
-    public TakeProductsResponse takeProduct(TakeProductsDTO eventPayload) {
+    public List<TakenProductOutput> takeProduct(TakeProductsInput eventPayload) {
 
-        var productIds = eventPayload.products().stream().map(TakeProductsDTO.Product::id).toList();
+        var productIds = eventPayload.products().stream().map(TakeProductsInput.Product::id).toList();
         var products = productRepository.findAllById(productIds);
 
         if (products.size() != productIds.size()) {
-
-            var eventResult = ProductEventResult.FAIL;
-            var productsToReturn = eventPayload.products().stream()
+            return eventPayload.products().stream()
                     .map(requestedProduct -> products.stream()
                             .filter(Objects::nonNull)
                             .filter(product -> product.getId().equals(requestedProduct.id()))
                             .findFirst()
-                            .map(product -> TakeProductsResponse.Product.valueOf(product, TakeProductStatus.NOT_TAKEN))
-                            .orElse(TakeProductsResponse.Product.valueOf(requestedProduct)))
+                            .map(product -> TakenProductOutput.valueOf(product, TakeProductStatus.NOT_TAKEN))
+                            .orElse(TakenProductOutput.valueOf(requestedProduct)))
                     .toList();
-
-            return TakeProductsResponse.builder()
-                    .products(productsToReturn)
-                    .result(eventResult)
-                    .type(ProductEventType.TAKE)
-                    .build();
         }
 
         var matchedProducts = matchFoundProductsWithRequestedProductSById(eventPayload.products(), products);
         var hasProductsOutOfStock = matchedProducts.entrySet().stream()
                 .anyMatch(entry -> ! entry.getKey().quantityCanBeTaken(entry.getValue().quantity()));
-        var eventResult = hasProductsOutOfStock ? ProductEventResult.FAIL : ProductEventResult.SUCCESS;
-        var productsToReturn = tryToTakeProductsFromStock(matchedProducts, hasProductsOutOfStock);
-
-
-        return TakeProductsResponse.builder()
-                .products(productsToReturn)
-                .result(eventResult)
-                .type(ProductEventType.TAKE)
-                .build();
+        return tryToTakeProductsFromStock(matchedProducts, hasProductsOutOfStock);
     }
 
-    private List<TakeProductsResponse.Product> tryToTakeProductsFromStock(Map<ProductEntity, TakeProductsDTO.Product> matchedProducts, boolean hasProductsOutOfStock) {
+    private List<TakenProductOutput> tryToTakeProductsFromStock(Map<ProductEntity, TakeProductsInput.Product> matchedProducts, boolean hasProductsOutOfStock) {
         var productsToReturn = matchedProducts.entrySet().stream().map(entry -> {
             var product = entry.getKey();
             var requestedProduct = entry.getValue();
 
             if (hasProductsOutOfStock) {
                 TakeProductStatus status = product.quantityCanBeTaken(requestedProduct.quantity()) ? TakeProductStatus.OUT_OF_STOCK : TakeProductStatus.NOT_TAKEN;
-                return TakeProductsResponse.Product.valueOf(product, status);
+                return TakenProductOutput.valueOf(product, status);
             }
 
             product.takeQuantity(requestedProduct.quantity());
-            return TakeProductsResponse.Product.valueOf(product, TakeProductStatus.TAKEN);
+            return TakenProductOutput.valueOf(product, TakeProductStatus.TAKEN);
         }).toList();
 
         if (! hasProductsOutOfStock) {
@@ -123,7 +105,7 @@ public class ProductService {
     }
 
 
-    private Map<ProductEntity, TakeProductsDTO.Product> matchFoundProductsWithRequestedProductSById(List<TakeProductsDTO.Product> requestedProducts, List<ProductEntity> products) {
+    private Map<ProductEntity, TakeProductsInput.Product> matchFoundProductsWithRequestedProductSById(List<TakeProductsInput.Product> requestedProducts, List<ProductEntity> products) {
         return requestedProducts.stream()
                 .map(requestedProduct -> {
                     var matchingProduct = products.stream()

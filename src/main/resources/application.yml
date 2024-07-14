@@ -47,5 +47,11 @@ push-notifications:
     update-success:
       title: Product {0} updated.
       message: Product update successfully.
+    take-success:
+      title: Products taken from stock.
+      message: Products {0} taken from stock.
+    take-failed:
+      title: Products not taken from stock.
+      message: Failed to take products {0} from stock because {1}.
 server:
   port: 8080

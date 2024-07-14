@@ -2,7 +2,7 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.exception.NotificationException;
 import com.example.eventdrivenarchexample.app.service.NotificationService;
-import com.example.eventdrivenarchexample.product.dto.events.request.NotificationBodyDTO;
+import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
@@ -24,7 +24,7 @@ public class ProductNotificationSQSListener {
 
     @SqsListener("${event-queues.product.notification-events}")
     public void notifyEvent(@Payload String payload) throws JsonProcessingException {
-        var notificationDTO = objectMapper.readValue(payload, NotificationBodyDTO.class);
+        var notificationDTO = objectMapper.readValue(payload, NotificationBodyInput.class);
         notificationServices.forEach(notificationService -> {
             try {
                 notificationService.send(notificationDTO);

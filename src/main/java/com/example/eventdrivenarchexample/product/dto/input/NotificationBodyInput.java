@@ -1,4 +1,4 @@
-package com.example.eventdrivenarchexample.product.dto.events.request;
+package com.example.eventdrivenarchexample.product.dto.input;
 
 import com.example.eventdrivenarchexample.app.dto.NotificationDTO;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import java.text.MessageFormat;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class NotificationBodyDTO {
+public class NotificationBodyInput {
 
     private String title;
 
@@ -31,8 +31,8 @@ public class NotificationBodyDTO {
         return messageFormat.format(vars);
     }
 
-    public static NotificationBodyDTO valueOf(NotificationDTO notificationDTO) {
-        return new NotificationBodyDTO(notificationDTO.title(), notificationDTO.message());
+    public static NotificationBodyInput valueOf(NotificationDTO notificationDTO) {
+        return new NotificationBodyInput(notificationDTO.title(), notificationDTO.message());
     }
 
 }

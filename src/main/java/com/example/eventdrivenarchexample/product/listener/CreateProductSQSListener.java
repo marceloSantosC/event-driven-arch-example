@@ -2,14 +2,15 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
-import com.example.eventdrivenarchexample.product.dto.events.request.NewProductDTO;
-import com.example.eventdrivenarchexample.product.dto.events.request.NotificationBodyDTO;
-import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
+import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
+import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
+import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
 import com.example.eventdrivenarchexample.product.service.ProductService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import lombok.extern.slf4j.Slf4j;
@@ -42,18 +43,22 @@ public class CreateProductSQSListener extends EventListenerWithNotification {
     public void onCreateProductEvent(String payload, @Headers Map<String, Object> headers) {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
-        NewProductDTO event = null;
-        try {
-            event = objectMapper.readValue(payload, NewProductDTO.class);
-            var id = productService.createProduct(event);
 
-            var notificationBody = NotificationBodyDTO.valueOf(notificationProperties.getCreationSuccess());
-            notificationBody.formatTittle(event.name());
-            notificationBody.formatMessage(event.name(), id.toString());
-            sendNotification(notificationBody, traceId, ProductEventResult.SUCCESS);
+        NewProductInput newProduct = null;
+        try {
+            EventPayload<NewProductInput> event = objectMapper.readValue(payload, new TypeReference<>() {
+            });
+            newProduct = event.getBody();
+
+            var id = productService.createProduct(event.getBody());
+
+            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getCreationSuccess());
+            notificationBody.formatTittle(newProduct.name());
+            notificationBody.formatMessage(newProduct.name(), id.toString());
+            sendNotification(notificationBody, traceId);
 
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize message for product event {} with trace id {}.", getEventType(), traceId);
+            log.error("Failed to serialize message for product event with trace id {}.", traceId);
         } catch (ProductException e) {
             log.error("Exception when processing product event : {}. Trace id: {}.", getEventType(), traceId);
 
@@ -61,10 +66,10 @@ public class CreateProductSQSListener extends EventListenerWithNotification {
                 throw e;
             }
 
-            var notificationBody = NotificationBodyDTO.valueOf(notificationProperties.getCreationFailed());
-            notificationBody.formatTittle(event.name());
-            notificationBody.formatMessage(event.name(), e.getReason());
-            sendNotification(notificationBody, traceId, ProductEventResult.FAIL);
+            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getCreationFailed());
+            notificationBody.formatTittle(newProduct.name());
+            notificationBody.formatMessage(newProduct.name(), e.getReason());
+            sendNotification(notificationBody, traceId);
         }
     }
 
