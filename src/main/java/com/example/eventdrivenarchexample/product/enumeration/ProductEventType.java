@@ -4,6 +4,7 @@ public enum ProductEventType {
 
     CREATION,
     UPDATE,
-    TAKE;
+    TAKE,
+    NOTIFICATION;
 
 }
