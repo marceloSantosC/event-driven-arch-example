@@ -2,9 +2,9 @@ package com.example.eventdrivenarchexample.product.service;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
-import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
-import com.example.eventdrivenarchexample.product.dto.input.ProductNotificationInput;
+import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProduct;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,11 +20,11 @@ public class ProductNotificationService {
 
     private final SQSClient sqsClient;
 
-    public void send(ProductNotificationInput notification) {
+    public void send(NotifyProduct notification) {
         log.info("Received notification with trace id {}.", notification.traceId());
         Map<String, Object> messageHeaders = Map.of(SQSClient.HEADER_TRACE_ID_NAME, notification.traceId());
 
-        EventPayload<NotificationBodyInput> event = new EventPayload<>();
+        CommandPayload<NotifyProductNotification> event = new CommandPayload<>();
         event.setBody(notification.body());
 
         sqsClient.sendToSQS(productQueues.getNotificationEventsQueue(), event, messageHeaders);

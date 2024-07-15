@@ -1,8 +1,8 @@
 package com.example.eventdrivenarchexample.product.entity;
 
 
-import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
-import com.example.eventdrivenarchexample.product.dto.input.UpdateProductInput;
+import com.example.eventdrivenarchexample.product.dto.command.CreateProduct;
+import com.example.eventdrivenarchexample.product.dto.command.UpdateProduct;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,7 +35,7 @@ public class ProductEntity {
     @Column(name = "PRICE", nullable = false)
     private BigDecimal price;
 
-    public static ProductEntity valueOf(NewProductInput dto) {
+    public static ProductEntity valueOf(CreateProduct dto) {
         return ProductEntity.builder()
                 .color(dto.color())
                 .name(dto.name())
@@ -44,7 +44,7 @@ public class ProductEntity {
                 .build();
     }
 
-    public void copyNonNullValuesFrom(UpdateProductInput payload) {
+    public void copyNonNullValuesFrom(UpdateProduct payload) {
         if (name != null) {
             name = payload.name();
         }

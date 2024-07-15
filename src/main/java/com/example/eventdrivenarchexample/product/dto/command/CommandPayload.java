@@ -1,4 +1,4 @@
-package com.example.eventdrivenarchexample.product.dto.input;
+package com.example.eventdrivenarchexample.product.dto.command;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventPayload<T> {
+public class CommandPayload<T> {
 
     private T body;
 

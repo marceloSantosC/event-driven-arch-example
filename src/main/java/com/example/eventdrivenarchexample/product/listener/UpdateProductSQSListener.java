@@ -2,10 +2,10 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
-import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
-import com.example.eventdrivenarchexample.product.dto.input.UpdateProductInput;
-import com.example.eventdrivenarchexample.product.dto.output.UpdatedProductEvent;
+import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
+import com.example.eventdrivenarchexample.product.dto.command.UpdateProduct;
+import com.example.eventdrivenarchexample.product.dto.event.UpdatedProductEvent;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
@@ -50,8 +50,8 @@ public class UpdateProductSQSListener extends EventListener {
     public void onUpdateProductEvent(String payload, @Headers Map<String, Object> headers) {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
-        UpdateProductInput eventBody = null;
-        EventPayload<UpdateProductInput> event = null;
+        UpdateProduct eventBody = null;
+        CommandPayload<UpdateProduct> event = null;
         try {
             event = objectMapper.readValue(payload, new TypeReference<>() {
             });
@@ -60,7 +60,7 @@ public class UpdateProductSQSListener extends EventListener {
 
             productService.updateProduct(eventBody);
 
-            var notification = NotificationBodyInput.valueOf(notificationProperties.getUpdateSuccess());
+            var notification = NotifyProductNotification.valueOf(notificationProperties.getUpdateSuccess());
             notification.formatTittle(eventBody.id().toString());
             sendNotification(notification, traceId);
 
@@ -74,7 +74,7 @@ public class UpdateProductSQSListener extends EventListener {
                 throw e;
             }
 
-            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getUpdateFailed());
+            var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getUpdateFailed());
             notificationBody.formatTittle(eventBody.name());
             notificationBody.formatMessage(eventBody.name(), e.getReason());
             sendNotification(notificationBody, traceId);
@@ -89,7 +89,7 @@ public class UpdateProductSQSListener extends EventListener {
         return ProductEventType.UPDATE;
     }
 
-    private void tryToSendEventResultToCallbackQueue(EventPayload<UpdateProductInput> event, String traceId, ProductEventResult result) {
+    private void tryToSendEventResultToCallbackQueue(CommandPayload<UpdateProduct> event, String traceId, ProductEventResult result) {
 
         if (StringUtils.isBlank(event.getCallbackQueue())) {
             return;

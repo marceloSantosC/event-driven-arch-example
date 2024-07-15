@@ -2,11 +2,11 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
-import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
-import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
-import com.example.eventdrivenarchexample.product.dto.output.TakenProductOutput;
-import com.example.eventdrivenarchexample.product.dto.output.TakenProductsEventResult;
+import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
+import com.example.eventdrivenarchexample.product.dto.command.TakeProducts;
+import com.example.eventdrivenarchexample.product.dto.event.TakenProduct;
+import com.example.eventdrivenarchexample.product.dto.event.TakenProducts;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
@@ -28,7 +28,7 @@ import static com.example.eventdrivenarchexample.product.enumeration.TakeProduct
 
 @Slf4j
 @Service
-public class TakeProductSQSListener extends EventListener<TakenProductsEventResult> {
+public class TakeProductSQSListener extends EventListener<TakenProducts> {
 
     private static final List<TakeProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_TAKEN, OUT_OF_STOCK);
 
@@ -57,19 +57,19 @@ public class TakeProductSQSListener extends EventListener<TakenProductsEventResu
 
 
         try {
-            EventPayload<TakeProductsInput> event = objectMapper.readValue(payload, new TypeReference<>() {
+            CommandPayload<TakeProducts> event = objectMapper.readValue(payload, new TypeReference<>() {
             });
             event.setTraceId(traceId);
 
-            List<TakenProductOutput> products = productService.takeProduct(event.getBody());
+            List<TakenProduct> products = productService.takeProduct(event.getBody());
 
             var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.status()));
 
             ProductEventResult result = hasProductsWithFailStatus ? ProductEventResult.FAIL : ProductEventResult.SUCCESS;
-            var resultPayload = new TakenProductsEventResult(products);
+            var resultPayload = new TakenProducts(products);
 
 
-            NotificationBodyInput notification = getNotificationBody(resultPayload, result);
+            NotifyProductNotification notification = getNotificationBody(resultPayload, result);
             sendNotification(notification, traceId);
 
             super.tryToSendEventResultToCallbackQueue(event, resultPayload, result);
@@ -84,19 +84,19 @@ public class TakeProductSQSListener extends EventListener<TakenProductsEventResu
         return ProductEventType.TAKE;
     }
 
-    private NotificationBodyInput getNotificationBody(TakenProductsEventResult resultPayload, ProductEventResult result) {
+    private NotifyProductNotification getNotificationBody(TakenProducts resultPayload, ProductEventResult result) {
         var productIds = resultPayload.products().stream()
-                .map(TakenProductOutput::id)
+                .map(TakenProduct::id)
                 .map(Object::toString)
                 .collect(Collectors.joining(", "));
 
         if (ProductEventResult.FAIL.equals(result)) {
-            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getTakeFailed());
+            var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getTakeFailed());
             notificationBody.formatMessage(productIds, "check the individual products for more info");
             return notificationBody;
         }
 
-        var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getTakeSuccess());
+        var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getTakeSuccess());
         notificationBody.formatMessage(productIds);
         return notificationBody;
     }

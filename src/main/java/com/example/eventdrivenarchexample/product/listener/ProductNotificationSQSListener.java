@@ -3,8 +3,8 @@ package com.example.eventdrivenarchexample.product.listener;
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.app.exception.NotificationException;
 import com.example.eventdrivenarchexample.app.service.NotificationService;
-import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
+import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,9 +47,9 @@ public class ProductNotificationSQSListener {
 
     }
 
-    private Optional<EventPayload<NotificationBodyInput>> readPayloadFromJson(String json, String traceId) {
+    private Optional<CommandPayload<NotifyProductNotification>> readPayloadFromJson(String json, String traceId) {
         try {
-            var event = objectMapper.readValue(json, new TypeReference<EventPayload<NotificationBodyInput>>() {
+            var event = objectMapper.readValue(json, new TypeReference<CommandPayload<NotifyProductNotification>>() {
             });
             return Optional.of(event);
         } catch (JsonProcessingException e) {

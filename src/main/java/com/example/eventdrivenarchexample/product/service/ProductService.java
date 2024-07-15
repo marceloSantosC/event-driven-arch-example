@@ -1,10 +1,10 @@
 package com.example.eventdrivenarchexample.product.service;
 
-import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
-import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
-import com.example.eventdrivenarchexample.product.dto.input.UpdateProductInput;
-import com.example.eventdrivenarchexample.product.dto.output.CreatedProductOutput;
-import com.example.eventdrivenarchexample.product.dto.output.TakenProductOutput;
+import com.example.eventdrivenarchexample.product.dto.command.CreateProduct;
+import com.example.eventdrivenarchexample.product.dto.command.TakeProducts;
+import com.example.eventdrivenarchexample.product.dto.command.UpdateProduct;
+import com.example.eventdrivenarchexample.product.dto.event.CreatedProduct;
+import com.example.eventdrivenarchexample.product.dto.event.TakenProduct;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
@@ -25,7 +25,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    public CreatedProductOutput createProduct(NewProductInput newProduct) {
+    public CreatedProduct createProduct(CreateProduct newProduct) {
         log.info("Creating product with name {}...", newProduct.name());
 
         if (productRepository.existsByName(newProduct.name())) {
@@ -38,11 +38,11 @@ public class ProductService {
 
         productRepository.save(product);
         log.info("Product with name {} created with id {}.", product.getName(), product.getId());
-        return new CreatedProductOutput(product.getId());
+        return new CreatedProduct(product.getId());
     }
 
 
-    public void updateProduct(UpdateProductInput updateProductDTO) {
+    public void updateProduct(UpdateProduct updateProductDTO) {
 
         if (updateProductDTO.quantity() <= 0) {
             log.error("Couldn't update product with id {}. Negative quantity, value: {}.", updateProductDTO.id(), updateProductDTO.quantity());
@@ -62,9 +62,9 @@ public class ProductService {
     }
 
 
-    public List<TakenProductOutput> takeProduct(TakeProductsInput productsToTake) {
+    public List<TakenProduct> takeProduct(TakeProducts productsToTake) {
 
-        var productIds = productsToTake.products().stream().map(TakeProductsInput.Product::id).toList();
+        var productIds = productsToTake.products().stream().map(TakeProducts.Product::id).toList();
         var products = productRepository.findAllById(productIds);
 
         if (products.size() != productIds.size()) {
@@ -74,8 +74,8 @@ public class ProductService {
                             .filter(Objects::nonNull)
                             .filter(product -> product.getId().equals(requestedProduct.id()))
                             .findFirst()
-                            .map(product -> TakenProductOutput.valueOf(product, TakeProductStatus.NOT_TAKEN))
-                            .orElse(TakenProductOutput.valueOf(requestedProduct)))
+                            .map(product -> TakenProduct.valueOf(product, TakeProductStatus.NOT_TAKEN))
+                            .orElse(TakenProduct.valueOf(requestedProduct)))
                     .toList();
         }
 
@@ -86,18 +86,18 @@ public class ProductService {
         return tryToTakeProductsFromStock(matchedProducts, hasProductsOutOfStock);
     }
 
-    private List<TakenProductOutput> tryToTakeProductsFromStock(Map<ProductEntity, TakeProductsInput.Product> matchedProducts, boolean hasProductsOutOfStock) {
+    private List<TakenProduct> tryToTakeProductsFromStock(Map<ProductEntity, TakeProducts.Product> matchedProducts, boolean hasProductsOutOfStock) {
         var productsToReturn = matchedProducts.entrySet().stream().map(entry -> {
             var product = entry.getKey();
             var requestedProduct = entry.getValue();
 
             if (hasProductsOutOfStock) {
                 TakeProductStatus status = product.quantityCanBeTaken(requestedProduct.quantity()) ? TakeProductStatus.OUT_OF_STOCK : TakeProductStatus.NOT_TAKEN;
-                return TakenProductOutput.valueOf(product, status);
+                return TakenProduct.valueOf(product, status);
             }
 
             product.takeQuantity(requestedProduct.quantity());
-            return TakenProductOutput.valueOf(product, TakeProductStatus.TAKEN);
+            return TakenProduct.valueOf(product, TakeProductStatus.TAKEN);
         }).toList();
 
         if (! hasProductsOutOfStock) {
@@ -108,7 +108,7 @@ public class ProductService {
     }
 
 
-    private Map<ProductEntity, TakeProductsInput.Product> matchFoundProductsWithRequestedProductSById(List<TakeProductsInput.Product> requestedProducts, List<ProductEntity> products) {
+    private Map<ProductEntity, TakeProducts.Product> matchFoundProductsWithRequestedProductSById(List<TakeProducts.Product> requestedProducts, List<ProductEntity> products) {
         return requestedProducts.stream()
                 .map(requestedProduct -> {
                     var matchingProduct = products.stream()

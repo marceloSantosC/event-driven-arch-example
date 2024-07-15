@@ -1,10 +1,10 @@
 package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
-import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
-import com.example.eventdrivenarchexample.product.dto.input.ProductNotificationInput;
-import com.example.eventdrivenarchexample.product.dto.output.EventCallbackPayload;
+import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProduct;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
+import com.example.eventdrivenarchexample.product.dto.event.EventPayload;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
@@ -21,18 +21,18 @@ public abstract class EventListener<O> {
 
     private final SQSClient sqsClient;
 
-    protected void sendNotification(NotificationBodyInput notificationBody, String traceId) {
-        var notification = ProductNotificationInput.builder()
+    protected void sendNotification(NotifyProductNotification notificationBody, String traceId) {
+        var notification = NotifyProduct.builder()
                 .body(notificationBody)
                 .traceId(traceId)
                 .build();
         notificationService.send(notification);
     }
 
-    protected void tryToSendEventResultToCallbackQueue(EventPayload<?> event, O output, ProductEventResult result) {
+    protected void tryToSendEventResultToCallbackQueue(CommandPayload<?> event, O output, ProductEventResult result) {
         if (StringUtils.isBlank(event.getCallbackQueue())) return;
 
-        EventCallbackPayload<O> callbackPayload = EventCallbackPayload.<O>builder()
+        EventPayload<O> callbackPayload = EventPayload.<O>builder()
                 .customId(event.getCustomId())
                 .eventType(getEventType())
                 .eventResult(result)

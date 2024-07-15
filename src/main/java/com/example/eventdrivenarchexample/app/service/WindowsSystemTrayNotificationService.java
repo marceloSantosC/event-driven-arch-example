@@ -1,7 +1,7 @@
 package com.example.eventdrivenarchexample.app.service;
 
 import com.example.eventdrivenarchexample.app.exception.NotificationException;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,7 @@ import java.awt.*;
 @Service
 public class WindowsSystemTrayNotificationService implements NotificationService {
 
-    public void send(NotificationBodyInput notificationBodyDTO) {
+    public void send(NotifyProductNotification notificationBodyDTO) {
         try {
             if (SystemTray.isSupported()) {
                 SystemTray tray = SystemTray.getSystemTray();

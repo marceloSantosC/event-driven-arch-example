@@ -1,4 +1,4 @@
-package com.example.eventdrivenarchexample.product.dto.output;
+package com.example.eventdrivenarchexample.product.dto.event;
 
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;

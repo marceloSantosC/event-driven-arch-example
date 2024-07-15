@@ -1,8 +1,8 @@
-package com.example.eventdrivenarchexample.product.dto.input;
+package com.example.eventdrivenarchexample.product.dto.command;
 
 import java.util.List;
 
-public record TakeProductsInput(
+public record TakeProducts(
         List<Product> products
 
 

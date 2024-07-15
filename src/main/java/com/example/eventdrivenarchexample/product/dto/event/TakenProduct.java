@@ -1,6 +1,6 @@
-package com.example.eventdrivenarchexample.product.dto.output;
+package com.example.eventdrivenarchexample.product.dto.event;
 
-import com.example.eventdrivenarchexample.product.dto.input.TakeProductsInput;
+import com.example.eventdrivenarchexample.product.dto.command.TakeProducts;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
 import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import lombok.Builder;
 import java.math.BigDecimal;
 
 @Builder
-public record TakenProductOutput(
+public record TakenProduct(
         Long id,
         BigDecimal value,
         String name,
@@ -16,8 +16,8 @@ public record TakenProductOutput(
         TakeProductStatus status
 ) {
 
-    public static TakenProductOutput valueOf(ProductEntity product, TakeProductStatus status) {
-        return TakenProductOutput.builder()
+    public static TakenProduct valueOf(ProductEntity product, TakeProductStatus status) {
+        return TakenProduct.builder()
                 .color(product.getColor())
                 .id(product.getId())
                 .value(product.getPrice())
@@ -26,8 +26,8 @@ public record TakenProductOutput(
                 .build();
     }
 
-    public static TakenProductOutput valueOf(TakeProductsInput.Product product) {
-        return TakenProductOutput.builder()
+    public static TakenProduct valueOf(TakeProducts.Product product) {
+        return TakenProduct.builder()
                 .id(product.id())
                 .status(TakeProductStatus.NOT_FOUND)
                 .build();

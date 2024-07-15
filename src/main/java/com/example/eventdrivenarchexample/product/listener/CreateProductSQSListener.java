@@ -2,10 +2,10 @@ package com.example.eventdrivenarchexample.product.listener;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
-import com.example.eventdrivenarchexample.product.dto.input.EventPayload;
-import com.example.eventdrivenarchexample.product.dto.input.NewProductInput;
-import com.example.eventdrivenarchexample.product.dto.input.NotificationBodyInput;
-import com.example.eventdrivenarchexample.product.dto.output.CreatedProductOutput;
+import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
+import com.example.eventdrivenarchexample.product.dto.command.CreateProduct;
+import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
+import com.example.eventdrivenarchexample.product.dto.event.CreatedProduct;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
-public class CreateProductSQSListener extends EventListener<CreatedProductOutput> {
+public class CreateProductSQSListener extends EventListener<CreatedProduct> {
 
     private final ObjectMapper objectMapper;
 
@@ -49,16 +49,16 @@ public class CreateProductSQSListener extends EventListener<CreatedProductOutput
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
 
 
-        EventPayload<NewProductInput> event = null;
+        CommandPayload<CreateProduct> event = null;
         try {
             event = objectMapper.readValue(payload, new TypeReference<>() {
             });
             event.setTraceId(traceId);
 
-            CreatedProductOutput createdProduct = productService.createProduct(event.getBody());
+            CreatedProduct createdProduct = productService.createProduct(event.getBody());
             super.tryToSendEventResultToCallbackQueue(event, createdProduct, ProductEventResult.SUCCESS);
 
-            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getCreationSuccess());
+            var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getCreationSuccess());
             notificationBody.formatTittle(event.getBody().name());
             notificationBody.formatMessage(event.getBody().name(), createdProduct.id().toString());
             sendNotification(notificationBody, traceId);
@@ -74,7 +74,7 @@ public class CreateProductSQSListener extends EventListener<CreatedProductOutput
 
             super.tryToSendEventResultToCallbackQueue(event, null, ProductEventResult.FAIL);
 
-            var notificationBody = NotificationBodyInput.valueOf(notificationProperties.getCreationFailed());
+            var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getCreationFailed());
             notificationBody.formatTittle(event.getBody().name());
             notificationBody.formatMessage(event.getBody().name(), e.getReason());
             sendNotification(notificationBody, traceId);
