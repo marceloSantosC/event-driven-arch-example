@@ -1,7 +1,7 @@
 package com.example.eventdrivenarchexample.product.service;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
-import com.example.eventdrivenarchexample.product.config.ProductQueueProperties;
+import com.example.eventdrivenarchexample.product.config.ProductEventQueuesProperties;
 import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
 import com.example.eventdrivenarchexample.product.dto.command.NotifyProduct;
 import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
@@ -16,7 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ProductNotificationService {
 
-    private final ProductQueueProperties productQueues;
+    private final ProductEventQueuesProperties productQueues;
 
     private final SQSClient sqsClient;
 

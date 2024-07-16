@@ -2,7 +2,7 @@ package com.example.eventdrivenarchexample.product.dto.command;
 
 import java.util.List;
 
-public record TakeProducts(
+public record ShipProducts(
         List<Product> products
 
 

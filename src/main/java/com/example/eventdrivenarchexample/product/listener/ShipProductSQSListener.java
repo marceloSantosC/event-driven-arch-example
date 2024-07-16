@@ -4,12 +4,12 @@ import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
 import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
 import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
-import com.example.eventdrivenarchexample.product.dto.command.TakeProducts;
-import com.example.eventdrivenarchexample.product.dto.event.TakenProduct;
-import com.example.eventdrivenarchexample.product.dto.event.TakenProducts;
+import com.example.eventdrivenarchexample.product.dto.command.ShipProducts;
+import com.example.eventdrivenarchexample.product.dto.event.ShippedProduct;
+import com.example.eventdrivenarchexample.product.dto.event.ShippedProducts;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult;
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
-import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
+import com.example.eventdrivenarchexample.product.enumeration.ShippedProductStatus;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
 import com.example.eventdrivenarchexample.product.service.ProductService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,17 +20,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus.*;
+import static com.example.eventdrivenarchexample.product.enumeration.ShippedProductStatus.*;
 
 @Slf4j
 @Service
-public class TakeProductSQSListener extends EventListener<TakenProducts> {
+public class ShipProductSQSListener extends EventListener<ShippedProducts> {
 
-    private static final List<TakeProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_TAKEN, OUT_OF_STOCK);
+    private static final List<ShippedProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_TAKEN, OUT_OF_STOCK);
 
     private final ProductNotificationProperties notificationProperties;
 
@@ -38,7 +40,7 @@ public class TakeProductSQSListener extends EventListener<TakenProducts> {
 
     private final ObjectMapper objectMapper;
 
-    public TakeProductSQSListener(ProductNotificationService notificationService,
+    public ShipProductSQSListener(ProductNotificationService notificationService,
                                   ProductNotificationProperties notificationProperties,
                                   ProductService productService,
                                   ObjectMapper objectMapper,
@@ -57,16 +59,16 @@ public class TakeProductSQSListener extends EventListener<TakenProducts> {
 
 
         try {
-            CommandPayload<TakeProducts> event = objectMapper.readValue(payload, new TypeReference<>() {
+            CommandPayload<ShipProducts> event = objectMapper.readValue(payload, new TypeReference<>() {
             });
             event.setTraceId(traceId);
 
-            List<TakenProduct> products = productService.takeProduct(event.getBody());
+            Set<ShippedProduct> products = productService.shipProducts(event.getBody());
 
-            var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.status()));
+            var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.getStatus()));
 
             ProductEventResult result = hasProductsWithFailStatus ? ProductEventResult.FAIL : ProductEventResult.SUCCESS;
-            var resultPayload = new TakenProducts(products);
+            var resultPayload = new ShippedProducts(products, LocalDateTime.now());
 
 
             NotifyProductNotification notification = getNotificationBody(resultPayload, result);
@@ -84,9 +86,9 @@ public class TakeProductSQSListener extends EventListener<TakenProducts> {
         return ProductEventType.TAKE;
     }
 
-    private NotifyProductNotification getNotificationBody(TakenProducts resultPayload, ProductEventResult result) {
+    private NotifyProductNotification getNotificationBody(ShippedProducts resultPayload, ProductEventResult result) {
         var productIds = resultPayload.products().stream()
-                .map(TakenProduct::id)
+                .map(ShippedProduct::getId)
                 .map(Object::toString)
                 .collect(Collectors.joining(", "));
 

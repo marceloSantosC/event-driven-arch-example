@@ -62,13 +62,13 @@ public class ProductEntity {
         }
     }
 
-    public boolean quantityCanBeTaken(Long quantityToTake) {
+    public boolean hasQuantityToBeShipped(Long quantityToTake) {
         long finalQuantity = quantity - quantityToTake;
         return finalQuantity >= 0;
     }
 
-    public void takeQuantity(Long quantityToTake) {
-        quantity = quantity - quantityToTake;
+    public void ship(Long quantityToShip) {
+        quantity = quantity - quantityToShip;
     }
 
 }

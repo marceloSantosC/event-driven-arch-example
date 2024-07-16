@@ -1,22 +1,22 @@
 package com.example.eventdrivenarchexample.product.service;
 
 import com.example.eventdrivenarchexample.product.dto.command.CreateProduct;
-import com.example.eventdrivenarchexample.product.dto.command.TakeProducts;
+import com.example.eventdrivenarchexample.product.dto.command.ShipProducts;
 import com.example.eventdrivenarchexample.product.dto.command.UpdateProduct;
 import com.example.eventdrivenarchexample.product.dto.event.CreatedProduct;
-import com.example.eventdrivenarchexample.product.dto.event.TakenProduct;
+import com.example.eventdrivenarchexample.product.dto.event.ShippedProduct;
 import com.example.eventdrivenarchexample.product.entity.ProductEntity;
-import com.example.eventdrivenarchexample.product.enumeration.TakeProductStatus;
+import com.example.eventdrivenarchexample.product.enumeration.ShippedProductStatus;
 import com.example.eventdrivenarchexample.product.exception.ProductException;
 import com.example.eventdrivenarchexample.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -62,61 +62,47 @@ public class ProductService {
     }
 
 
-    public List<TakenProduct> takeProduct(TakeProducts productsToTake) {
+    public Set<ShippedProduct> shipProducts(ShipProducts productsToShipPayload) {
 
-        var productIds = productsToTake.products().stream().map(TakeProducts.Product::id).toList();
+        var productIds = productsToShipPayload.products().stream().map(ShipProducts.Product::id).toList();
         var products = productRepository.findAllById(productIds);
 
-        if (products.size() != productIds.size()) {
+        Map<ShippedProduct, ProductEntity> productsMap = new HashMap<>();
 
-            return productsToTake.products().stream()
-                    .map(requestedProduct -> products.stream()
-                            .filter(Objects::nonNull)
-                            .filter(product -> product.getId().equals(requestedProduct.id()))
-                            .findFirst()
-                            .map(product -> TakenProduct.valueOf(product, TakeProductStatus.NOT_TAKEN))
-                            .orElse(TakenProduct.valueOf(requestedProduct)))
-                    .toList();
-        }
+        boolean hasNotFoundOrOutOfStockProducts = false;
+        for (ShipProducts.Product productToShip : productsToShipPayload.products()) {
 
-        var matchedProducts = matchFoundProductsWithRequestedProductSById(productsToTake.products(), products);
-        var hasProductsOutOfStock = matchedProducts.entrySet().stream()
-                .anyMatch(entry -> ! entry.getKey().quantityCanBeTaken(entry.getValue().quantity()));
+            Optional<ProductEntity> matchingProduct = products.stream().filter(product -> product.getId().equals(productToShip.id())).findFirst();
 
-        return tryToTakeProductsFromStock(matchedProducts, hasProductsOutOfStock);
-    }
-
-    private List<TakenProduct> tryToTakeProductsFromStock(Map<ProductEntity, TakeProducts.Product> matchedProducts, boolean hasProductsOutOfStock) {
-        var productsToReturn = matchedProducts.entrySet().stream().map(entry -> {
-            var product = entry.getKey();
-            var requestedProduct = entry.getValue();
-
-            if (hasProductsOutOfStock) {
-                TakeProductStatus status = product.quantityCanBeTaken(requestedProduct.quantity()) ? TakeProductStatus.OUT_OF_STOCK : TakeProductStatus.NOT_TAKEN;
-                return TakenProduct.valueOf(product, status);
+            if (matchingProduct.isEmpty() || ! matchingProduct.get().hasQuantityToBeShipped(productToShip.quantity())) {
+                hasNotFoundOrOutOfStockProducts = true;
+                var shippedProduct = matchingProduct
+                        .map(product -> ShippedProduct.valueOf(product, ShippedProductStatus.OUT_OF_STOCK))
+                        .orElse(ShippedProduct.valueOf(productToShip));
+                shippedProduct.setQuantityShipped(0L);
+                productsMap.put(shippedProduct, matchingProduct.orElse(null));
+                continue;
             }
-
-            product.takeQuantity(requestedProduct.quantity());
-            return TakenProduct.valueOf(product, TakeProductStatus.TAKEN);
-        }).toList();
-
-        if (! hasProductsOutOfStock) {
-            productRepository.saveAll(matchedProducts.keySet());
+            
+            var shippedProduct = ShippedProduct.valueOf(matchingProduct.get(), ShippedProductStatus.NOT_TAKEN);
+            productsMap.put(shippedProduct, matchingProduct.get());
+            shippedProduct.setQuantityShipped(productToShip.quantity());
         }
 
-        return productsToReturn;
+
+        if (hasNotFoundOrOutOfStockProducts) {
+            return productsMap.keySet();
+        }
+
+        productsMap.forEach(((shippedProduct, product) -> {
+            shippedProduct.setStatus(ShippedProductStatus.TAKEN);
+            product.ship(shippedProduct.getQuantityShipped());
+        }));
+
+        productRepository.saveAll(products);
+
+        return productsMap.keySet();
     }
 
 
-    private Map<ProductEntity, TakeProducts.Product> matchFoundProductsWithRequestedProductSById(List<TakeProducts.Product> requestedProducts, List<ProductEntity> products) {
-        return requestedProducts.stream()
-                .map(requestedProduct -> {
-                    var matchingProduct = products.stream()
-                            .filter(product -> product.getId().equals(requestedProduct.id()))
-                            .findFirst()
-                            .get();
-                    return Map.entry(matchingProduct, requestedProduct);
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
 }
