@@ -10,11 +10,16 @@ queues+=(order-failed-events)
 queues+=(order-notification-events)
 queues+=(order-take-products-result-events)
 
+
 # PRODUCT QUEUES
-queues+=(product-create-events)
-queues+=(product-update-events)
-queues+=(product-notification-events)
-queues+=(product-take-events)
+queues+=(product-created-events)
+queues+=(product-updated-events)
+queues+=(product-shipped-events)
+
+queues+=(product-update-commands)
+queues+=(product-notify-commands)
+queues+=(product-ship-commands)
+queues+=(product-create-commands)
 
 # Profile
 aws configure set aws_access_key_id localstack --profile=localstack

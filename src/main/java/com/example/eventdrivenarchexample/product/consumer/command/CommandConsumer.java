@@ -1,4 +1,4 @@
-package com.example.eventdrivenarchexample.product.listener;
+package com.example.eventdrivenarchexample.product.consumer.command;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
@@ -9,13 +9,12 @@ import com.example.eventdrivenarchexample.product.enumeration.ProductEventResult
 import com.example.eventdrivenarchexample.product.enumeration.ProductEventType;
 import com.example.eventdrivenarchexample.product.service.ProductNotificationService;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 
 
 @RequiredArgsConstructor
-public abstract class EventListener<O> {
+public abstract class CommandConsumer<O> {
 
     private final ProductNotificationService notificationService;
 
@@ -29,19 +28,19 @@ public abstract class EventListener<O> {
         notificationService.send(notification);
     }
 
-    protected void tryToSendEventResultToCallbackQueue(CommandPayload<?> event, O output, ProductEventResult result) {
-        if (StringUtils.isBlank(event.getCallbackQueue())) return;
-
-        EventPayload<O> callbackPayload = EventPayload.<O>builder()
-                .customId(event.getCustomId())
+    protected void sendEvent(CommandPayload<?> command, O output, ProductEventResult result) {
+        EventPayload<O> eventPayload = EventPayload.<O>builder()
+                .customId(command.getCustomId())
                 .eventType(getEventType())
                 .eventResult(result)
                 .body(output)
                 .build();
 
-        sqsClient.sendToSQS(event.getCallbackQueue(), callbackPayload, Map.of(SQSClient.HEADER_TRACE_ID_NAME, event.getTraceId()));
+        sqsClient.sendToSQS(getEventQueue(), eventPayload, Map.of(SQSClient.HEADER_TRACE_ID_NAME, command.getTraceId()));
     }
 
     protected abstract ProductEventType getEventType();
+
+    protected abstract String getEventQueue();
 
 }

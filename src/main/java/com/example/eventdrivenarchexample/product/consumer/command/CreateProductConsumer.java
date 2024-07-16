@@ -1,6 +1,7 @@
-package com.example.eventdrivenarchexample.product.listener;
+package com.example.eventdrivenarchexample.product.consumer.command;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
+import com.example.eventdrivenarchexample.product.config.ProductEventQueues;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
 import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
 import com.example.eventdrivenarchexample.product.dto.command.CreateProduct;
@@ -23,31 +24,33 @@ import java.util.Map;
 
 @Slf4j
 @Service
-public class CreateProductSQSListener extends EventListener<CreatedProduct> {
+public class CreateProductConsumer extends CommandConsumer<CreatedProduct> {
 
     private final ObjectMapper objectMapper;
 
     private final ProductService productService;
 
+    private final ProductEventQueues eventQueues;
+
     private final ProductNotificationProperties notificationProperties;
 
-    public CreateProductSQSListener(ObjectMapper objectMapper,
-                                    ProductService productService,
-                                    SQSClient sqsClient,
-                                    ProductNotificationService notificationService,
-                                    ProductNotificationProperties notificationProperties) {
+    public CreateProductConsumer(ObjectMapper objectMapper,
+                                 ProductService productService,
+                                 SQSClient sqsClient,
+                                 ProductNotificationService notificationService, ProductEventQueues eventQueues,
+                                 ProductNotificationProperties notificationProperties) {
         super(notificationService, sqsClient);
         this.objectMapper = objectMapper;
         this.productService = productService;
+        this.eventQueues = eventQueues;
         this.notificationProperties = notificationProperties;
     }
 
 
-    @SqsListener(queueNames = {"${event-queues.product.create-events}"})
-    public void onCreateProductEvent(String payload, @Headers Map<String, Object> headers) {
+    @SqsListener(queueNames = {"${sqs-queues.product.commands.create}"})
+    public void createProduct(String payload, @Headers Map<String, Object> headers) {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
-
 
         CommandPayload<CreateProduct> event = null;
         try {
@@ -56,7 +59,8 @@ public class CreateProductSQSListener extends EventListener<CreatedProduct> {
             event.setTraceId(traceId);
 
             CreatedProduct createdProduct = productService.createProduct(event.getBody());
-            super.tryToSendEventResultToCallbackQueue(event, createdProduct, ProductEventResult.SUCCESS);
+
+            sendEvent(event, createdProduct, ProductEventResult.SUCCESS);
 
             var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getCreationSuccess());
             notificationBody.formatTittle(event.getBody().name());
@@ -72,7 +76,8 @@ public class CreateProductSQSListener extends EventListener<CreatedProduct> {
                 throw e;
             }
 
-            super.tryToSendEventResultToCallbackQueue(event, null, ProductEventResult.FAIL);
+            assert event != null;
+            super.sendEvent(event, null, ProductEventResult.FAIL);
 
             var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getCreationFailed());
             notificationBody.formatTittle(event.getBody().name());
@@ -85,6 +90,11 @@ public class CreateProductSQSListener extends EventListener<CreatedProduct> {
     @Override
     protected ProductEventType getEventType() {
         return ProductEventType.CREATION;
+    }
+
+    @Override
+    protected String getEventQueue() {
+        return eventQueues.getCreated();
     }
 
 }

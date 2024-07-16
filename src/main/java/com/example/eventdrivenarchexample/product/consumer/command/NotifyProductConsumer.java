@@ -1,4 +1,4 @@
-package com.example.eventdrivenarchexample.product.listener;
+package com.example.eventdrivenarchexample.product.consumer.command;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
 import com.example.eventdrivenarchexample.app.exception.NotificationException;
@@ -24,14 +24,14 @@ import static com.example.eventdrivenarchexample.product.enumeration.ProductEven
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductNotificationSQSListener {
+public class NotifyProductConsumer {
 
     private final Set<NotificationService> notificationServices;
 
     private final ObjectMapper objectMapper;
 
-    @SqsListener("${event-queues.product.notification-events}")
-    public void onNotificationEvent(@Payload String payload, @Headers Map<String, Object> headers) {
+    @SqsListener("${sqs-queues.product.commands.notify}")
+    public void notifyProductEvent(@Payload String payload, @Headers Map<String, Object> headers) {
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
         log.info("Sending notifications for event with trace id {}.", traceId);
         readPayloadFromJson(payload, traceId)

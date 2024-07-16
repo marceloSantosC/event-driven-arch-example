@@ -21,17 +21,17 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
-event-queues:
-  order:
-    received-events: order-received-events
-    create-events: order-create-events
-    failed-events: order-failed-events
-    notification-events: order-notification-events
+sqs-queues:
   product:
-    create-events: product-create-events
-    update-events: product-update-events
-    notification-events: product-notification-events
-    take-events: product-take-events
+    commands:
+      create: product-create-commands
+      update: product-update-commands
+      notify: product-notify-commands
+      ship: product-ship-commands
+    events:
+      created: product-created-events
+      updated: product-updated-events
+      shipped: product-shipped-events
 
 push-notifications:
   product:
@@ -47,11 +47,11 @@ push-notifications:
     update-success:
       title: Product {0} updated.
       message: Product update successfully.
-    take-success:
-      title: Products taken from stock.
-      message: Products {0} taken from stock.
-    take-failed:
-      title: Products not taken from stock.
-      message: Failed to take products {0} from stock {1}.
+    ship-success:
+      title: Products shipped.
+      message: Products {0} shipped successfully.
+    ship-failed:
+      title: Products not shipped.
+      message: Failed to ship products {0}. {1}.
 server:
   port: 8080

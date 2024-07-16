@@ -1,7 +1,6 @@
 package com.example.eventdrivenarchexample.order.service;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
-import com.example.eventdrivenarchexample.order.config.OrderQueueProperties;
 import com.example.eventdrivenarchexample.order.dto.events.NewOrderEventPayload;
 import com.example.eventdrivenarchexample.order.entity.OrderEntity;
 import com.example.eventdrivenarchexample.order.entity.OrderProductEntity;
@@ -23,7 +22,6 @@ public class OrderService {
     private final OrderProductRepository orderProductRepository;
 
     private final SQSClient sqsClient;
-    private final OrderQueueProperties orderQueueProperties;
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void createOrder(NewOrderEventPayload newOrder) {

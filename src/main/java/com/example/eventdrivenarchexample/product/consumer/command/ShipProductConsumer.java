@@ -1,6 +1,7 @@
-package com.example.eventdrivenarchexample.product.listener;
+package com.example.eventdrivenarchexample.product.consumer.command;
 
 import com.example.eventdrivenarchexample.app.client.SQSClient;
+import com.example.eventdrivenarchexample.product.config.ProductEventQueues;
 import com.example.eventdrivenarchexample.product.config.ProductNotificationProperties;
 import com.example.eventdrivenarchexample.product.dto.command.CommandPayload;
 import com.example.eventdrivenarchexample.product.dto.command.NotifyProductNotification;
@@ -30,7 +31,7 @@ import static com.example.eventdrivenarchexample.product.enumeration.ShippedProd
 
 @Slf4j
 @Service
-public class ShipProductSQSListener extends EventListener<ShippedProducts> {
+public class ShipProductConsumer extends CommandConsumer<ShippedProducts> {
 
     private static final List<ShippedProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_TAKEN, OUT_OF_STOCK);
 
@@ -38,25 +39,29 @@ public class ShipProductSQSListener extends EventListener<ShippedProducts> {
 
     private final ProductService productService;
 
+    private final ProductEventQueues eventQueues;
+
     private final ObjectMapper objectMapper;
 
-    public ShipProductSQSListener(ProductNotificationService notificationService,
-                                  ProductNotificationProperties notificationProperties,
-                                  ProductService productService,
-                                  ObjectMapper objectMapper,
-                                  SQSClient sqsClient) {
+
+    public ShipProductConsumer(ProductNotificationService notificationService,
+                               ProductNotificationProperties notificationProperties,
+                               ProductService productService,
+                               ObjectMapper objectMapper,
+                               SQSClient sqsClient,
+                               ProductEventQueues eventQueues) {
         super(notificationService, sqsClient);
         this.notificationProperties = notificationProperties;
         this.productService = productService;
         this.objectMapper = objectMapper;
+        this.eventQueues = eventQueues;
     }
 
 
-    @SqsListener("${event-queues.product.take-events}")
-    public void onTakeProductEvent(String payload, @Headers Map<String, Object> headers) {
+    @SqsListener("${sqs-queues.product.commands.ship}")
+    public void shipProduct(String payload, @Headers Map<String, Object> headers) {
 
         String traceId = (String) headers.get(SQSClient.HEADER_TRACE_ID_NAME);
-
 
         try {
             CommandPayload<ShipProducts> event = objectMapper.readValue(payload, new TypeReference<>() {
@@ -68,22 +73,17 @@ public class ShipProductSQSListener extends EventListener<ShippedProducts> {
             var hasProductsWithFailStatus = products.stream().anyMatch(product -> TAKE_PRODUCTS_FAIL_STATUS.contains(product.getStatus()));
 
             ProductEventResult result = hasProductsWithFailStatus ? ProductEventResult.FAIL : ProductEventResult.SUCCESS;
-            var resultPayload = new ShippedProducts(products, LocalDateTime.now());
+            var eventPayload = new ShippedProducts(products, LocalDateTime.now());
 
 
-            NotifyProductNotification notification = getNotificationBody(resultPayload, result);
+            NotifyProductNotification notification = getNotificationBody(eventPayload, result);
             sendNotification(notification, traceId);
 
-            super.tryToSendEventResultToCallbackQueue(event, resultPayload, result);
+            sendEvent(event, eventPayload, result);
 
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize message for product event {} with trace id {}.", getEventType(), traceId);
         }
-    }
-
-    @Override
-    protected ProductEventType getEventType() {
-        return ProductEventType.TAKE;
     }
 
     private NotifyProductNotification getNotificationBody(ShippedProducts resultPayload, ProductEventResult result) {
@@ -93,14 +93,25 @@ public class ShipProductSQSListener extends EventListener<ShippedProducts> {
                 .collect(Collectors.joining(", "));
 
         if (ProductEventResult.FAIL.equals(result)) {
-            var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getTakeFailed());
+            var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getShipFailed());
             notificationBody.formatMessage(productIds, "check the individual products for more info");
             return notificationBody;
         }
 
-        var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getTakeSuccess());
+        var notificationBody = NotifyProductNotification.valueOf(notificationProperties.getShipSuccess());
         notificationBody.formatMessage(productIds);
         return notificationBody;
     }
+
+    @Override
+    protected ProductEventType getEventType() {
+        return ProductEventType.TAKE;
+    }
+
+    @Override
+    protected String getEventQueue() {
+        return eventQueues.getShipped();
+    }
+
 
 }
