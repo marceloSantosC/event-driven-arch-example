@@ -84,7 +84,7 @@ public class ProductService {
                 continue;
             }
             
-            var shippedProduct = ShippedProduct.valueOf(matchingProduct.get(), ShippedProductStatus.NOT_TAKEN);
+            var shippedProduct = ShippedProduct.valueOf(matchingProduct.get(), ShippedProductStatus.NOT_SHIPPED);
             productsMap.put(shippedProduct, matchingProduct.get());
             shippedProduct.setQuantityShipped(productToShip.quantity());
         }
@@ -95,7 +95,7 @@ public class ProductService {
         }
 
         productsMap.forEach(((shippedProduct, product) -> {
-            shippedProduct.setStatus(ShippedProductStatus.TAKEN);
+            shippedProduct.setStatus(ShippedProductStatus.SHIPPED);
             product.ship(shippedProduct.getQuantityShipped());
         }));
 

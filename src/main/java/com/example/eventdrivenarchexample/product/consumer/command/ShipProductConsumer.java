@@ -33,7 +33,7 @@ import static com.example.eventdrivenarchexample.product.enumeration.ShippedProd
 @Service
 public class ShipProductConsumer extends CommandConsumer<ShippedProducts> {
 
-    private static final List<ShippedProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_TAKEN, OUT_OF_STOCK);
+    private static final List<ShippedProductStatus> TAKE_PRODUCTS_FAIL_STATUS = List.of(NOT_FOUND, NOT_SHIPPED, OUT_OF_STOCK);
 
     private final ProductNotificationProperties notificationProperties;
 
