@@ -3,7 +3,7 @@ package com.example.consumer.event;
 import com.example.client.SQSClient;
 import com.example.config.OrderEventQueues;
 import com.example.dto.event.Event;
-import com.example.dto.events.OrderCreated;
+import com.example.dto.event.OrderCreated;
 import com.example.enumeration.OrderEventType;
 import com.example.service.OrderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,7 +42,7 @@ public class OrderCreatedConsumer extends EventConsumer<OrderCreated> {
         try {
             Event<OrderCreated, OrderEventType> event = objectMapper.readValue(message, new TypeReference<>() {
             });
-            log.info(message);
+            orderService.requestShipping(event.getBody());
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize message for product event with trace id {}.", traceId);
         }

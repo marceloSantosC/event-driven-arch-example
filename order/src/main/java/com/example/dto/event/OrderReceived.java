@@ -1,4 +1,4 @@
-package com.example.dto.events;
+package com.example.dto.event;
 
 
 import com.example.enumeration.CustomerDocumentType;

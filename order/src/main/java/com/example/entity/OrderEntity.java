@@ -1,6 +1,6 @@
 package com.example.entity;
 
-import com.example.dto.events.OrderReceived;
+import com.example.dto.event.OrderReceived;
 import com.example.enumeration.CustomerDocumentType;
 import com.example.enumeration.OrderStatus;
 import jakarta.persistence.*;
