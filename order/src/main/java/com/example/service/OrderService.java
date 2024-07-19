@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.dto.events.OrderCreated;
 import com.example.dto.events.OrderReceived;
 import com.example.entity.OrderEntity;
 import com.example.entity.OrderProductEntity;
@@ -23,7 +24,7 @@ public class OrderService {
     private final OrderProductRepository orderProductRepository;
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public void createOrder(OrderReceived newOrder) {
+    public OrderCreated createOrder(OrderReceived newOrder) {
 
         var order = OrderEntity.valueOf(newOrder);
         orderRepository.save(order);
@@ -35,6 +36,8 @@ public class OrderService {
                         .build())
                 .toList();
         orderProductRepository.saveAll(orderProducts);
+
+        return OrderCreated.valueOf(order.getId(), orderProducts);
 
     }
 

@@ -30,3 +30,4 @@ sqs-queues:
   order:
     events:
       received: order-received-events
+      created: order-created-events

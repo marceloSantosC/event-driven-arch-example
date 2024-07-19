@@ -22,7 +22,7 @@ public class OrderProductEntity {
     @Column(name = "`VALUE`")
     private BigDecimal value;
 
-    private Integer quantity;
+    private Long quantity;
 
     private BigDecimal totalValue;
 

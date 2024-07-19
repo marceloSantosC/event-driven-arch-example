@@ -8,7 +8,7 @@ queues+=(notify-user-commands)
 
 # ORDER QUEUES
 queues+=(order-received-events)
-queues+=(order-create-events)
+queues+=(order-created-events)
 queues+=(order-failed-events)
 queues+=(order-notification-events)
 queues+=(order-take-products-result-events)

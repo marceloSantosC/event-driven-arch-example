@@ -8,14 +8,13 @@ import java.util.List;
 
 @Builder
 public record OrderReceived(
-        String eventId,
         List<Product> products,
         String customerDocument,
         CustomerDocumentType documentType
 ) {
     public record Product(
             Long id,
-            Integer quantity
+            Long quantity
     ) {
     }
 }
