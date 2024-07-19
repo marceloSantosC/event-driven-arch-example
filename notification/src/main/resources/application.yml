@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: event-driven-arch-example-notification
+  cloud:
+    aws:
+      credentials:
+        access-key: localstack
+        secret-key: localstack
+      region:
+        static: sa-east-1
+      sqs:
+        endpoint: http://localhost:4566
+
+sqs-queues:
+  commands:
+    notify-user: notify-user-commands

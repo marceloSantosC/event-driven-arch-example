@@ -1,0 +1,54 @@
+spring:
+  cloud:
+    aws:
+      credentials:
+        access-key: localstack
+        secret-key: localstack
+      region:
+        static: sa-east-1
+      sqs:
+        endpoint: http://localhost:4566
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: sa
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+sqs-queues:
+  product:
+    commands:
+      create: product-create-commands
+      update: product-update-commands
+      ship: product-ship-commands
+    events:
+      created: product-created-events
+      updated: product-updated-events
+      shipped: product-shipped-events
+  notification:
+    commands:
+      notify-user: notify-user-commands
+
+notification:
+  creation-failed:
+    title: Failed to create product {0}.
+    message: Failed to create product with name {0} because {1}.
+  creation-success:
+    title: Product {0} created.
+    message: Product with name {0} created with id {1}.
+  update-failed:
+    title: Product {0} couldn't be updated.
+    message: Failed to update product because {1}.
+  update-success:
+    title: Product {0} updated.
+    message: Product update successfully.
+  ship-success:
+    title: Products shipped.
+    message: Products {0} shipped successfully.
+  ship-failed:
+    title: Products not shipped.
+    message: Failed to ship products {0}. {1}.

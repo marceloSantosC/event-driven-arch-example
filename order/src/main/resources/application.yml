@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: event-driven-arch-example
+  cloud:
+    aws:
+      credentials:
+        access-key: localstack
+        secret-key: localstack
+      region:
+        static: sa-east-1
+      sqs:
+        endpoint: http://localhost:4566
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: sa
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+sqs-queues:
+  product:
+    commands:
+      ship: product-ship-commands
+    events:
+      shipped: product-shipped-events
+  order:
+    events:
+      received: order-received-events
