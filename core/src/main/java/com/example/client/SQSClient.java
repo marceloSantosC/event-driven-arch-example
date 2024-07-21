@@ -24,20 +24,7 @@ public class SQSClient {
     private final ObjectMapper objectMapper;
 
     @SneakyThrows
-    public String sendToSQS(String queue, Object payload) {
-        if (queue == null) {
-            throw new MessageBrokerException("Cannot send message to null queue.", null);
-        }
-
-        if (payload == null) {
-            throw new MessageBrokerException("Cannot send message with null payload.", queue);
-        }
-
-        return sqsTemplate.send(queue, new ObjectMapper().writeValueAsString(payload)).messageId().toString();
-    }
-
-    @SneakyThrows
-    public String sendToSQS(String queue, Object payload, Map<String, Object> headers) {
+    public void sendToSQS(String queue, Object payload, Map<String, Object> headers) {
         if (queue == null) {
             throw new MessageBrokerException("Cannot send message to null queue.", null);
         }
@@ -58,11 +45,10 @@ public class SQSClient {
                         .payload(objectMapper.writeValueAsString(payload))
                         .headers(headers);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                throw new MessageBrokerException(e, queue);
             }
         }).messageId().toString();
         log.info("Message with id {} sent to queue {}.", messageId, queue);
-        return messageId;
 
     }
 

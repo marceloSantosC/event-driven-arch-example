@@ -1,5 +1,6 @@
 package com.example.entity;
 
+import com.example.enumeration.OrderProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,7 @@ public class OrderProductEntity {
 
     private Long quantity;
 
-    private BigDecimal totalValue;
+    private OrderProductStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId(value = "orderId")

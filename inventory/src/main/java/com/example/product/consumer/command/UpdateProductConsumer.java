@@ -26,8 +26,6 @@ import java.util.Map;
 @Service
 public class UpdateProductConsumer extends CommandConsumer<Void> {
 
-    private final SQSClient sqsClient;
-
     private final ObjectMapper objectMapper;
 
     private final ProductService productService;
@@ -44,7 +42,6 @@ public class UpdateProductConsumer extends CommandConsumer<Void> {
                                  ProductEventQueues eventQueues,
                                  ProductNotificationProperties notificationProperties) {
         super(notificationService, sqsClient);
-        this.sqsClient = sqsClient;
         this.productService = productService;
         this.objectMapper = objectMapper;
         this.eventQueues = eventQueues;

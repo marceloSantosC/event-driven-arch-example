@@ -1,5 +1,6 @@
 package com.example.exception;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Getter;
 
 @Getter
@@ -12,4 +13,8 @@ public class MessageBrokerException extends RuntimeException {
         this.queueName = queueName;
     }
 
+    public MessageBrokerException(JsonProcessingException e, String queueName) {
+        super(e.getMessage(), e);
+        this.queueName = queueName;
+    }
 }

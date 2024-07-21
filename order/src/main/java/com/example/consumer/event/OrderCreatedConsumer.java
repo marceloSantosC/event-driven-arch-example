@@ -49,12 +49,12 @@ public class OrderCreatedConsumer extends EventConsumer<OrderCreated> {
     }
 
     @Override
-    protected OrderEventType getEventType() {
+    protected OrderEventType generatedEventType() {
         return OrderEventType.RECEIVED;
     }
 
     @Override
-    protected String getEventQueue() {
+    protected String generatedEventQueue() {
         return eventQueues.getCreated();
     }
 }

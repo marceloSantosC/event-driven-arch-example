@@ -109,7 +109,7 @@ public class ShipProductConsumer extends CommandConsumer<ShippedProducts> {
 
     @Override
     protected ProductEventType getEventType() {
-        return ProductEventType.TAKE;
+        return ProductEventType.SHIP;
     }
 
     @Override

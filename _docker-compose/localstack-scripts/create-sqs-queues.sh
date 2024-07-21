@@ -12,6 +12,7 @@ queues+=(order-created-events)
 queues+=(order-failed-events)
 queues+=(order-notification-events)
 queues+=(order-take-products-result-events)
+queues+=(order-cancel-command)
 
 
 # PRODUCT QUEUES
