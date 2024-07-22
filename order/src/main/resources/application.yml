@@ -39,8 +39,13 @@ sqs-queues:
 
 notification:
   order-products-invalid:
-    title: Order will be cancelled.
+    title: Order will be cancelled
     message: Order {0} will be cancelled because it has invalid and/or out of stock products.
   order-products-shipped:
     title: Order products shipped
     message: All products of order {0} have been shipped.
+  order-cancel-success:
+    title: Order {0} cancelled
+  order-cancel-fail:
+    title: Failed to cancel order {0}
+    message: Failed to cancell order because {0}.

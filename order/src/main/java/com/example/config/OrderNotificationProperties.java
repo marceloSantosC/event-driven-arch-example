@@ -17,4 +17,8 @@ public class OrderNotificationProperties {
 
     private NotificationProperty orderProductsShipped;
 
+    private NotificationProperty orderCancelSuccess;
+
+    private NotificationProperty orderCancelFail;
+
 }

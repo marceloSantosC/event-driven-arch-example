@@ -38,6 +38,10 @@ public class OrderEntity {
 
     private LocalDateTime creationDate;
 
+    private String cancellationReason;
+
+    private LocalDateTime cancellationDate;
+
     public static OrderEntity valueOf(OrderReceived newOrder) {
         return OrderEntity.builder()
                 .status(OrderStatus.CREATED)
@@ -46,4 +50,12 @@ public class OrderEntity {
                 .creationDate(LocalDateTime.now())
                 .build();
     }
+
+
+    public void cancelOrder(String reason) {
+        cancellationReason = reason;
+        cancellationDate = LocalDateTime.now();
+        status = OrderStatus.CANCELLED;
+    }
+
 }

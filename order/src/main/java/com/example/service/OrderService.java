@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.client.SQSClient;
 import com.example.config.ProductCommandQueues;
+import com.example.dto.command.CancelOrder;
 import com.example.dto.command.Command;
 import com.example.dto.command.ShipProducts;
 import com.example.dto.event.Event;
@@ -58,11 +59,7 @@ public class OrderService {
     }
 
     public void requestShipping(OrderCreated createdOrder) {
-        OrderEntity order = orderRepository.findById(createdOrder.orderId())
-                .orElseThrow(() -> {
-                    log.error("Order with id {} not found.", createdOrder.orderId());
-                    return new OrderException("Order not found", false);
-                });
+        OrderEntity order = getOrderOrThrowException(createdOrder.orderId());
 
         Command<ShipProducts> shipProductsCommand = Command.<ShipProducts>builder()
                 .body(ShipProducts.valueOf(createdOrder))
@@ -78,14 +75,22 @@ public class OrderService {
         log.info("Updated order with id {} status to {}.", order.getId(), order.getStatus());
     }
 
-    public void updateOrderProductStatus(Event<ShippedProducts, ProductEventType> event) {
+    private OrderEntity getOrderOrThrowException(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Order {} not found.", id);
+                    return new OrderException("Order not found", false);
+                });
+    }
 
+    public void updateOrderProductStatus(Event<ShippedProducts, ProductEventType> event) {
+        log.info("Updating product status for order with id {}.", event.getCustomId());
         Long orderId = Long.valueOf(event.getCustomId());
 
         OrderEntity order = orderRepository.findByIdFetchProducts(orderId)
                 .orElseThrow(() -> {
                     log.error("Order with id {} not found.", orderId);
-                    return new OrderException("Order not found", false);
+                    return new OrderException("order wasn't found.", false);
                 });
 
         order.getProducts().forEach(product -> event.getBody().products().stream()
@@ -98,7 +103,14 @@ public class OrderService {
 
         order.setStatus(EventResult.SUCCESS.equals(event.getEventResult()) ? OrderStatus.FINISHED : OrderStatus.PRODUCT_SHIPPING_FAILED);
         orderRepository.save(order);
-
+        log.info("Updated product status for order with id {}.", event.getCustomId());
     }
 
+    public void cancelOrder(Long orderId, CancelOrder cancelOrder) {
+        log.info("Cancelling order with id {}.", orderId);
+        OrderEntity order = getOrderOrThrowException(orderId);
+        order.cancelOrder(cancelOrder.reason());
+        orderRepository.save(order);
+        log.info("Order {} cancelled.", orderId);
+    }
 }
